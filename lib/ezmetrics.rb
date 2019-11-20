@@ -1,9 +1,14 @@
 require "redis" unless defined?(Redis)
 
 class EZmetrics
-  REDIS_KEY = "ez-metrics"
+  attr_reader :redis, :last_minute_metrics, :requests, :redis_key
 
-  def self.log(payload)
+  def initialize
+    @redis = Redis.new
+    @redis_key = "ez-metrics"
+  end
+
+  def log(payload)
     payload = {
       db:       payload[:db].to_f,
       queries:  payload[:queries].to_i,
@@ -11,10 +16,9 @@ class EZmetrics
       status:   payload[:status].to_i
     }
 
-    redis               = Redis.new
     current_second      = Time.now.sec
     status_group        = "#{payload[:status].to_s[0]}xx"
-    this_second_metrics = redis.get("#{REDIS_KEY}:#{current_second}")
+    this_second_metrics = redis.get("#{redis_key}:#{current_second}")
 
     if this_second_metrics
       this_second_metrics = JSON.parse(this_second_metrics)
@@ -40,47 +44,82 @@ class EZmetrics
       this_second_metrics["statuses"][status_group] = 1
     end
 
-    redis.setex("#{REDIS_KEY}:#{current_second}", 59, this_second_metrics.to_json)
-  rescue
-    nil
+    redis.setex("#{redis_key}:#{current_second}", 59, this_second_metrics.to_json)
+  rescue => error
+    display_error(error)
   end
 
-  def self.show
-    redis         = Redis.new
-    empty_metrics = {
-      avg_db:       0,
-      avg_duration: 0,
-      avg_queries:  0,
-      max_db:       0,
-      max_duration: 0,
-      max_queries:  0,
-      statuses:     {}
-    }
-
-    last_minute_metrics = redis.mget((0..59).to_a.map { |second| "#{REDIS_KEY}:#{second}" }).compact.map { |m| JSON.parse(m) }
+  def show
+    @last_minute_metrics = redis.mget((0..59).to_a.map { |second| "#{redis_key}:#{second}" }).compact.map { |m| JSON.parse(m) }
 
     return empty_metrics unless last_minute_metrics.any?
 
-    requests = last_minute_metrics.map { |h| h["statuses"]["all"] }.compact.sum
+    @requests = last_minute_metrics.map { |h| h["statuses"]["all"] }.compact.sum
 
     {
-      avg_db:       (last_minute_metrics.map { |h| h["db_sum"] }.sum.to_f / requests).round,
-      avg_duration: (last_minute_metrics.map { |h| h["duration_sum"] }.sum.to_f / requests).round,
-      avg_queries:  (last_minute_metrics.map { |h| h["queries_sum"] }.sum.to_f / requests).round,
-      max_db:       last_minute_metrics.map { |h| h["db_max"] }.max.round,
-      max_queries:  last_minute_metrics.map { |h| h["queries_max"] }.max.round,
-      max_duration: last_minute_metrics.map { |h| h["duration_max"] }.max.round,
-      statuses:     {
+      duration: {
+        avg: avg(:duration_sum),
+        max: max(:duration_max)
+      },
+      db: {
+        avg: avg(:db_sum),
+        max: max(:db_max)
+      },
+      queries: {
+        avg: avg(:queries_sum),
+        max: max(:queries_max)
+      },
+      requests:     {
         all:     requests,
         grouped: {
-          "2xx" => last_minute_metrics.map { |h| h["statuses"]["2xx"] }.sum,
-          "3xx" => last_minute_metrics.map { |h| h["statuses"]["3xx"] }.sum,
-          "4xx" => last_minute_metrics.map { |h| h["statuses"]["4xx"] }.sum,
-          "5xx" => last_minute_metrics.map { |h| h["statuses"]["5xx"] }.sum
+          "2xx" => count("2xx"),
+          "3xx" => count("3xx"),
+          "4xx" => count("4xx"),
+          "5xx" => count("5xx")
         }
       }
     }
   rescue
     empty_metrics
+  end
+
+  private
+
+  def avg(metrics)
+    (last_minute_metrics.map { |h| h[metrics.to_s] }.sum.to_f / requests).round
+  end
+
+  def max(metrics)
+    last_minute_metrics.map { |h| h[metrics.to_s] }.max.round
+  end
+
+  def count(group)
+    last_minute_metrics.map { |h| h["statuses"][group.to_s] }.sum
+  end
+
+  def display_error(error)
+    {
+      error:     error.class.name,
+      message:   error.message,
+      backtrace: error.backtrace.reject { |line| line.match(/ruby|gems/) }
+    }
+  end
+
+  def empty_metrics
+    {
+      duration: {
+        avg: 0,
+        max: 0
+      },
+      db: {
+        avg: 0,
+        max: 0
+      },
+      queries: {
+        avg: 0,
+        max: 0
+      },
+      requests: {}
+    }
   end
 end
