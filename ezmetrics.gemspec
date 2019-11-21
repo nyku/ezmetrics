@@ -1,6 +1,6 @@
 Gem::Specification.new do |gem|
   gem.name                  = "ezmetrics"
-  gem.version               = "1.0.0"
+  gem.version               = "1.0.1"
   gem.date                  = "2019-11-22"
   gem.summary               = "Rails metrics aggregation tool."
   gem.description           = "A simple tool for capturing and displaying Rails metrics."
