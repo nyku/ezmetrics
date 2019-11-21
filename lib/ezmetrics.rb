@@ -69,7 +69,7 @@ class EZmetrics
         avg: avg(:queries_sum),
         max: max(:queries_max)
       },
-      requests:     {
+      requests: {
         all:     requests,
         grouped: {
           "2xx" => count("2xx"),
