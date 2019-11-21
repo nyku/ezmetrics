@@ -1,9 +1,9 @@
 Gem::Specification.new do |gem|
   gem.name          = "ezmetrics"
-  gem.version       = "0.0.3"
-  gem.date          = "2019-11-21"
-  gem.summary       = "A simple tool for displaying live metrics for a Rails application uning Redis"
-  gem.description   = "A simple tool for displaying live metrics for a Rails application uning Redis"
+  gem.version       = "0.0.4"
+  gem.date          = "2019-11-22"
+  gem.summary       = "A simple tool for capturing and displaying Rails metrics."
+  gem.description   = "A simple tool for capturing and displaying Rails metrics."
   gem.authors       = ["Nicolae Rotaru"]
   gem.email         = "nyku.rn@gmail.com"
   gem.homepage      = "https://github.com/nyku/ezmetrics"

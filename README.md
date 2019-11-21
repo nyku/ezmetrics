@@ -1,13 +1,11 @@
 # ezmetrics
-A simple tool for displaying live metrics for a Rails application using Redis
+A simple tool for capturing and displaying Rails metrics.
 
-## Install:
+## Installation
 
-`gem "ezmetrics", git: "git@github.com:nyku/ezmetrics.git", ref: "master"`
+`gem 'ezmetrics'`
 
-Note: requires `redis` 4.0 or later
-
-## Usage:
+## Usage
 
 1. Add `config/initializers/ezmetrics.rb` to your Rails application:
 
@@ -31,13 +29,13 @@ ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*
 end
 ```
 
-2. Run
+2. Display metrics
 
 ```ruby
 EZmetrics.new.display
 ```
 
-\# =>
+Will return a hash with the following structure:
 
 ```ruby
 {
@@ -46,20 +44,20 @@ EZmetrics.new.display
     max: 9675
   },
   db: {
-    avg: 55,
-    max: 82
+    avg: 155,
+    max: 4382
   },
   queries: {
     avg: 26,
     max: 76
   },
   requests: {
-    all: 7,
+    all: 2000,
     grouped: {
-      "2xx" => 3,
-      "3xx" => 1,
-      "4xx" => 1,
-      "5xx" => 2
+      "2xx" => 1900,
+      "3xx" => 15,
+      "4xx" => 80,
+      "5xx" => 5
     }
   }
 }
