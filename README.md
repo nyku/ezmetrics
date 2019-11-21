@@ -32,7 +32,7 @@ end
 2. Display metrics
 
 ```ruby
-EZmetrics.new.display
+EZmetrics.new.show
 ```
 
 Will return a hash with the following structure:
