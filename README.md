@@ -1,6 +1,8 @@
 # ezmetrics
 A simple tool for capturing and displaying Rails metrics.
 
+#### Please note that the current implementation stores and aggregates metrics only for the last minute.
+
 ## Installation
 
 `gem 'ezmetrics'`
