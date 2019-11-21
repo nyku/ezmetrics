@@ -1,6 +1,6 @@
 Gem::Specification.new do |gem|
   gem.name                  = "ezmetrics"
-  gem.version               = "1.0.1"
+  gem.version               = "1.0.2"
   gem.date                  = "2019-11-22"
   gem.summary               = "Rails metrics aggregation tool."
   gem.description           = "A simple tool for capturing and displaying Rails metrics."
@@ -12,4 +12,5 @@ Gem::Specification.new do |gem|
   gem.require_paths         = ["lib"]
   gem.required_ruby_version = ">= 2.4.0"
   gem.add_dependency "redis", ["~> 4.0"]
+  gem.add_development_dependency "rspec", "~> 3.5"
 end

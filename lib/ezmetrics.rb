@@ -1,4 +1,5 @@
 require "redis" unless defined?(Redis)
+require "json"  unless defined?(JSON)
 
 class EZmetrics
   attr_reader :redis, :last_minute_metrics, :requests, :redis_key
@@ -44,7 +45,7 @@ class EZmetrics
       this_second_metrics["statuses"][status_group] = 1
     end
 
-    redis.setex("#{redis_key}:#{current_second}", 59, this_second_metrics.to_json)
+    redis.setex("#{redis_key}:#{current_second}", 59, JSON.generate(this_second_metrics))
   rescue => error
     display_error(error)
   end
