@@ -8,11 +8,12 @@ class EZmetrics
     @storage_key      = "ez-metrics"
   end
 
-  def log(payload={db: 0.0, duration: 0.0, queries: 0, status: 200})
+  def log(payload={duration: 0.0, views: 0.0, db: 0.0, queries: 0, status: 200})
     payload = {
+      duration: payload[:duration].to_f,
+      views:    payload[:views].to_f,
       db:       payload[:db].to_f,
       queries:  payload[:queries].to_i,
-      duration: payload[:duration].to_f,
       status:   payload[:status].to_i
     }
 
@@ -22,22 +23,30 @@ class EZmetrics
 
     if this_second_metrics
       this_second_metrics = JSON.parse(this_second_metrics)
-      this_second_metrics["db_sum"]                 += payload[:db]
-      this_second_metrics["queries_sum"]            += payload[:queries]
-      this_second_metrics["duration_sum"]           += payload[:duration]
+
+      this_second_metrics["duration_sum"] += payload[:duration]
+      this_second_metrics["views_sum"]    += payload[:views]
+      this_second_metrics["db_sum"]       += payload[:db]
+      this_second_metrics["queries_sum"]  += payload[:queries]
+
+      this_second_metrics["duration_max"] = [payload[:duration], this_second_metrics["duration_max"]].max
+      this_second_metrics["views_max"]    = [payload[:views], this_second_metrics["views_max"]].max
+      this_second_metrics["db_max"]       = [payload[:db], this_second_metrics["db_max"]].max
+      this_second_metrics["queries_max"]  = [payload[:queries], this_second_metrics["queries_max"]].max
+
       this_second_metrics["statuses"]["all"]        += 1
       this_second_metrics["statuses"][status_group] += 1
-      this_second_metrics["db_max"]                 = [payload[:db], this_second_metrics["db_max"]].max
-      this_second_metrics["queries_max"]            = [payload[:queries], this_second_metrics["queries_max"]].max
-      this_second_metrics["duration_max"]           = [payload[:duration], this_second_metrics["duration_max"]].max
     else
       this_second_metrics = {
+        "duration_sum" => payload[:duration],
+        "duration_max" => payload[:duration],
+        "views_sum"    => payload[:views],
+        "views_max"    => payload[:views],
         "db_sum"       => payload[:db],
         "db_max"       => payload[:db],
         "queries_sum"  => payload[:queries],
         "queries_max"  => payload[:queries],
-        "duration_sum" => payload[:duration],
-        "duration_max" => payload[:duration],
+
         "statuses"     => { "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0, "all" => 1 }
       }
 
@@ -95,6 +104,10 @@ class EZmetrics
         avg: avg(:duration_sum),
         max: max(:duration_max)
       },
+      views: {
+        avg: avg(:views_sum),
+        max: max(:views_max)
+      },
       db: {
         avg: avg(:db_sum),
         max: max(:db_max)
@@ -118,6 +131,10 @@ class EZmetrics
   def empty_metrics_object
     {
       duration: {
+        avg: 0,
+        max: 0
+      },
+      views: {
         avg: 0,
         max: 0
       },
