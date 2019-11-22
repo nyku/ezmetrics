@@ -3,14 +3,16 @@ A simple tool for capturing and displaying Rails metrics.
 
 ## Installation
 
-`gem 'ezmetrics'`
+```
+gem 'ezmetrics'
+```
 
 ## Usage
 
-0. Intro
+### Getting started
 
-The `EZmetrics` class is initialized with a 60 seconds timeframe by default.
-You can change this according to your needs:
+This tool captures and aggregates metrics for a 60 seconds timeframe by default.
+You can change the timeframe according to your needs:
 
 ```ruby
   #log
@@ -26,9 +28,11 @@ You can change this according to your needs:
   # Note: you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
 ```
 
-1. Add `config/initializers/ezmetrics.rb` to your Rails application:
+### Add an initializer to your Rails application
 
 ```ruby
+# config/initializers/ezmetrics.rb
+
 ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
   event = ActiveSupport::Notifications::Event.new(*args)
   unless event.payload[:name] == "SCHEMA"
@@ -48,7 +52,7 @@ ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*
 end
 ```
 
-2. Display metrics
+### Display metrics
 
 ```ruby
 EZmetrics.new.show
