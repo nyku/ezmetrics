@@ -1,5 +1,9 @@
 # ezmetrics
+
+[![Gem Version](https://badge.fury.io/rb/ezmetrics.svg)](https://badge.fury.io/rb/ezmetrics)
+
 A simple tool for capturing and displaying Rails metrics.
+
 
 ## Installation
 
