@@ -15,23 +15,43 @@ gem 'ezmetrics'
 
 ### Getting started
 
-This tool captures and aggregates metrics for a 60 seconds timeframe by default.
+This tool captures and aggregates metrics such as 
+- `status`
+- `duration`
+- `queries`
+- `db`
 
-You can change the timeframe according to your needs:
+for a 60 seconds timeframe by default.
+
+You can change the timeframe according to your needs and save the metrics by calling `log` method: 
 
 ```ruby
-  #log
-
-  EZmetrics.new.log({ status: 200 })             #=> Stores the metrics for 60 seconds (default behaviour)
-  EZmetrics.new(10.minutes).log({ status: 200 }) #=> Stores the metrics for 10 minutes
-
-  #show
-
-  EZmetrics.new.show              #=> Aggregates metrics for last 60 seconds (default behaviour)
-  EZmetrics.new(10.minutes).show  #=> Aggregates metrics for last 10 minutes
-
-  # Note: you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
+  # Store the metrics for 60 seconds (default behaviour)
+  EZmetrics.new.log(status: 200, db: 300.45, duration: 320.45, queries: 5)
 ```
+or
+
+```ruby
+  # Store the metrics for 10 minutes
+  EZmetrics.new(10.minutes).log(status: 200, db: 300.45, duration: 320.45, queries: 5) 
+```
+
+For displaying metrics you need call `show` method:
+
+```ruby
+  # Aggregate and show metrics for last 60 seconds (default behaviour)
+  EZmetrics.new.show 
+```
+
+or
+
+```ruby
+  # Aggregate and show metrics for last 10 minutes
+  EZmetrics.new(10.minutes).show
+```
+
+> Please note that you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
+
 
 ### Add an initializer to your Rails application
 

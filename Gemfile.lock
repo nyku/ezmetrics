@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ezmetrics (1.0.3)
+    ezmetrics (1.0.4)
       redis (~> 4.0)
 
 GEM
@@ -32,4 +32,4 @@ DEPENDENCIES
   rspec (~> 3.5)
 
 BUNDLED WITH
-   1.16.0.pre.3
+   1.17.3
