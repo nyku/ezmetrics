@@ -120,6 +120,44 @@ describe EZmetrics do
       )
     end
 
+    it "should expire stored keys" do
+      described_class.new(1).log(db: 24.4, duration: 100.5, status: 200)
+      expect(subject.show).to eq(
+        {
+          db: {
+            avg: 24,
+            max: 24
+          },
+          duration: {
+            avg: 101,
+            max: 101
+          },
+          queries: {
+            avg: 0,
+            max: 0
+          },
+          requests: {
+            all: 1,
+            grouped: {
+              "2xx" => 1,
+              "3xx" => 0,
+              "4xx" => 0,
+              "5xx" => 0
+            }
+          }
+        }
+      )
+
+      sleep(1)
+
+      expect(subject.show).to eq({
+        db:       { avg: 0, max: 0 },
+        duration: { avg: 0, max: 0 },
+        queries:  { avg: 0, max: 0 },
+        requests: {}
+      })
+    end
+
     it "should handle log/show errors" do
       expect(Redis).to  receive(:new).and_return(nil)
 

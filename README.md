@@ -1,13 +1,30 @@
 # ezmetrics
 A simple tool for capturing and displaying Rails metrics.
 
-#### Please note that the current implementation stores and aggregates metrics only for the last minute.
-
 ## Installation
 
 `gem 'ezmetrics'`
 
 ## Usage
+
+0. Intro
+
+The `EZmetrics` class is initialized with a 60 seconds timeframe by default.
+You can change this according to your needs:
+
+```ruby
+  #log
+
+  EZmetrics.new.log({ status: 200 })             #=> Stores the metrics for 60 seconds (default behaviour)
+  EZmetrics.new(10.minutes).log({ status: 200 }) #=> Stores the metrics for 10 minutes
+
+  #show
+
+  EZmetrics.new.show              #=> aggregates metrics for last 60 seconds (default behaviour)
+  EZmetrics.new(10.minutes).show  #=> aggregates metrics for last 10 minutes
+
+  # Note: you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
+```
 
 1. Add `config/initializers/ezmetrics.rb` to your Rails application:
 

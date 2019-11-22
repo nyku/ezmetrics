@@ -2,11 +2,12 @@ require "redis" unless defined?(Redis)
 require "json"  unless defined?(JSON)
 
 class EZmetrics
-  attr_reader :redis, :last_minute_metrics, :requests, :redis_key
+  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :redis_key
 
-  def initialize
-    @redis = Redis.new
-    @redis_key = "ez-metrics"
+  def initialize(interval_seconds=60)
+    @interval_seconds = interval_seconds.to_i
+    @redis            = Redis.new
+    @redis_key        = "ez-metrics"
   end
 
   def log(payload)
@@ -17,7 +18,7 @@ class EZmetrics
       status:   payload[:status].to_i
     }
 
-    current_second      = Time.now.sec
+    current_second      = Time.now.to_i
     status_group        = "#{payload[:status].to_s[0]}xx"
     this_second_metrics = redis.get("#{redis_key}:#{current_second}")
 
@@ -45,17 +46,18 @@ class EZmetrics
       this_second_metrics["statuses"][status_group] = 1
     end
 
-    redis.setex("#{redis_key}:#{current_second}", 59, JSON.generate(this_second_metrics))
+    redis.setex("#{redis_key}:#{current_second}", interval_seconds, JSON.generate(this_second_metrics))
   rescue => error
     display_error(error)
   end
 
   def show
-    @last_minute_metrics = redis.mget((0..59).to_a.map { |second| "#{redis_key}:#{second}" }).compact.map { |m| JSON.parse(m) }
+    interval_start    = Time.now.to_i - interval_seconds
+    @interval_metrics = redis.mget((interval_start..Time.now.to_i).to_a.map { |second| "#{redis_key}:#{second}" }).compact.map { |m| JSON.parse(m) }
 
-    return empty_metrics unless last_minute_metrics.any?
+    return empty_metrics unless interval_metrics.any?
 
-    @requests = last_minute_metrics.map { |h| h["statuses"]["all"] }.compact.sum
+    @requests = interval_metrics.map { |h| h["statuses"]["all"] }.compact.sum
 
     {
       duration: {
@@ -87,15 +89,15 @@ class EZmetrics
   private
 
   def avg(metrics)
-    (last_minute_metrics.map { |h| h[metrics.to_s] }.sum.to_f / requests).round
+    (interval_metrics.map { |h| h[metrics.to_s] }.sum.to_f / requests).round
   end
 
   def max(metrics)
-    last_minute_metrics.map { |h| h[metrics.to_s] }.max.round
+    interval_metrics.map { |h| h[metrics.to_s] }.max.round
   end
 
   def count(group)
-    last_minute_metrics.map { |h| h["statuses"][group.to_s] }.sum
+    interval_metrics.map { |h| h["statuses"][group.to_s] }.sum
   end
 
   def display_error(error)

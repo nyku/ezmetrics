@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ezmetrics (1.0.2)
+    ezmetrics (1.0.3)
       redis (~> 4.0)
 
 GEM
