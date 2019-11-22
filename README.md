@@ -12,6 +12,7 @@ gem 'ezmetrics'
 ### Getting started
 
 This tool captures and aggregates metrics for a 60 seconds timeframe by default.
+
 You can change the timeframe according to your needs:
 
 ```ruby
@@ -22,8 +23,8 @@ You can change the timeframe according to your needs:
 
   #show
 
-  EZmetrics.new.show              #=> aggregates metrics for last 60 seconds (default behaviour)
-  EZmetrics.new(10.minutes).show  #=> aggregates metrics for last 10 minutes
+  EZmetrics.new.show              #=> Aggregates metrics for last 60 seconds (default behaviour)
+  EZmetrics.new(10.minutes).show  #=> Aggregates metrics for last 10 minutes
 
   # Note: you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
 ```
@@ -58,7 +59,7 @@ end
 EZmetrics.new.show
 ```
 
-Will return a hash with the following structure:
+This will return a hash with the following structure:
 
 ```ruby
 {
