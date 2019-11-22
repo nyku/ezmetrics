@@ -9,7 +9,7 @@ class EZmetrics
   end
 
   def log(payload={duration: 0.0, views: 0.0, db: 0.0, queries: 0, status: 200})
-    payload = {
+    @safe_payload = {
       duration: payload[:duration].to_f,
       views:    payload[:views].to_f,
       db:       payload[:db].to_f,
@@ -17,36 +17,30 @@ class EZmetrics
       status:   payload[:status].to_i
     }
 
-    this_second         = Time.now.to_i
-    status_group        = "#{payload[:status].to_s[0]}xx"
-    this_second_metrics = redis.get("#{storage_key}:#{this_second}")
+    this_second          = Time.now.to_i
+    status_group         = "#{payload[:status].to_s[0]}xx"
+    @this_second_metrics = redis.get("#{storage_key}:#{this_second}")
 
     if this_second_metrics
-      this_second_metrics = JSON.parse(this_second_metrics)
+      @this_second_metrics = JSON.parse(this_second_metrics)
 
-      this_second_metrics["duration_sum"] += payload[:duration]
-      this_second_metrics["views_sum"]    += payload[:views]
-      this_second_metrics["db_sum"]       += payload[:db]
-      this_second_metrics["queries_sum"]  += payload[:queries]
-
-      this_second_metrics["duration_max"] = [payload[:duration], this_second_metrics["duration_max"]].max
-      this_second_metrics["views_max"]    = [payload[:views], this_second_metrics["views_max"]].max
-      this_second_metrics["db_max"]       = [payload[:db], this_second_metrics["db_max"]].max
-      this_second_metrics["queries_max"]  = [payload[:queries], this_second_metrics["queries_max"]].max
+      [:duration, :views, :db, :queries].each do |metrics_type|
+        update_sum(metrics_type)
+        update_max(metrics_type)
+      end
 
       this_second_metrics["statuses"]["all"]        += 1
       this_second_metrics["statuses"][status_group] += 1
     else
-      this_second_metrics = {
-        "duration_sum" => payload[:duration],
-        "duration_max" => payload[:duration],
-        "views_sum"    => payload[:views],
-        "views_max"    => payload[:views],
-        "db_sum"       => payload[:db],
-        "db_max"       => payload[:db],
-        "queries_sum"  => payload[:queries],
-        "queries_max"  => payload[:queries],
-
+      @this_second_metrics = {
+        "duration_sum" => safe_payload[:duration],
+        "duration_max" => safe_payload[:duration],
+        "views_sum"    => safe_payload[:views],
+        "views_max"    => safe_payload[:views],
+        "db_sum"       => safe_payload[:db],
+        "db_max"       => safe_payload[:db],
+        "queries_sum"  => safe_payload[:queries],
+        "queries_max"  => safe_payload[:queries],
         "statuses"     => { "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0, "all" => 1 }
       }
 
@@ -76,7 +70,17 @@ class EZmetrics
 
   private
 
-  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :storage_key
+  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :storage_key,
+    :safe_payload, :this_second_metrics
+
+  def update_sum(metrics)
+    this_second_metrics["#{metrics}_sum"] += safe_payload[metrics.to_sym]
+  end
+
+  def update_max(metrics)
+    max_value = [safe_payload[metrics.to_sym], this_second_metrics["#{metrics}_max"]].max
+    this_second_metrics["#{metrics}_max"] = max_value
+  end
 
   def avg(metrics)
     (interval_metrics.map { |h| h[metrics.to_s] }.sum.to_f / requests).round
