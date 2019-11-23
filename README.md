@@ -15,14 +15,14 @@ gem 'ezmetrics'
 
 ### Getting started
 
-This tool captures and aggregates metrics such as
+This tool captures and aggregates Rails application metrics such as
 - `duration`
 - `views`
 - `db`
 - `queries`
 - `status`
 
-for a 60 seconds timeframe by default.
+and stores them for the timeframe you specified, 60 seconds by default.
 
 You can change the timeframe according to your needs and save the metrics by calling `log` method:
 
@@ -54,7 +54,9 @@ or
 > Please note that you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
 
 
-### Add an initializer to your Rails application
+### Capture metrics
+
+Just add an initializer to your application:
 
 ```ruby
 # config/initializers/ezmetrics.rb
@@ -80,6 +82,8 @@ end
 ```
 
 ### Display metrics
+
+As simple as:
 
 ```ruby
 EZmetrics.new.show
@@ -117,3 +121,56 @@ This will return a hash with the following structure:
 }
 ```
 
+### Performance
+
+The implementation is based on **Redis** commands such as:  
+
+- [`get`](https://redis.io/commands/get)  
+- [`mget`](https://redis.io/commands/mget)
+- [`setex`](https://redis.io/commands/setex)
+
+which are extremely fast:
+
+```bash
+require 'ezmetrics'
+require 'pp'
+```
+
+```ruby
+pp Benchmark.measure {
+  EZmetrics.new(3600).log(
+    status:   rand(200..500), 
+    duration: rand(10000), 
+    views:    rand(8000), 
+    db:       rand(6000), 
+    queries:  rand(100)
+  ) 
+} ; nil
+
+#<Benchmark::Tms:0x00007fc9cc995370
+ @cstime=0.0,
+ @cutime=0.0,
+ @label="",
+ @real=0.000742000003810972,
+ @stime=0.00018599999999999173,
+ @total=0.0005780000000001617,
+ @utime=0.00039200000000017>
+ => nil 
+
+```
+
+```ruby
+pp Benchmark.measure {
+  EZmetrics.new(3600).show 
+} ; nil
+
+#<Benchmark::Tms:0x00007fc9cca55508
+ @cstime=0.0,
+ @cutime=0.0,
+ @label="",
+ @real=0.025030000018887222,
+ @stime=0.0018440000000000123,
+ @total=0.023447000000000273,
+ @utime=0.02160300000000026>
+ => nil 
+ ```
