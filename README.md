@@ -138,7 +138,7 @@ require 'pp'
 
 ```ruby
 pp Benchmark.measure {
-  EZmetrics.new(3600).log(
+  EZmetrics.new(1.hour).log(
     status:   rand(200..500), 
     duration: rand(10000), 
     views:    rand(8000), 
@@ -161,7 +161,7 @@ pp Benchmark.measure {
 
 ```ruby
 pp Benchmark.measure {
-  EZmetrics.new(3600).show 
+  EZmetrics.new(1.hour).show 
 } ; nil
 
 #<Benchmark::Tms:0x00007fc9cca55508
