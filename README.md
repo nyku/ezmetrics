@@ -123,9 +123,9 @@ This will return a hash with the following structure:
 
 ### Performance
 
-The implementation is based on **Redis** commands such as:  
+The implementation is based on **Redis** commands such as:
 
-- [`get`](https://redis.io/commands/get)  
+- [`get`](https://redis.io/commands/get)
 - [`mget`](https://redis.io/commands/mget)
 - [`setex`](https://redis.io/commands/setex)
 
@@ -139,12 +139,12 @@ require 'pp'
 ```ruby
 pp Benchmark.measure {
   EZmetrics.new(1.hour).log(
-    status:   rand(200..500), 
-    duration: rand(10000), 
-    views:    rand(8000), 
-    db:       rand(6000), 
+    status:   rand(200..500),
+    duration: rand(10000),
+    views:    rand(8000),
+    db:       rand(6000),
     queries:  rand(100)
-  ) 
+  )
 } ; nil
 
 #<Benchmark::Tms:0x00007fc9cc995370
@@ -155,13 +155,13 @@ pp Benchmark.measure {
  @stime=0.00018599999999999173,
  @total=0.0005780000000001617,
  @utime=0.00039200000000017>
- => nil 
+ => nil
 
 ```
 
 ```ruby
 pp Benchmark.measure {
-  EZmetrics.new(1.hour).show 
+  EZmetrics.new(1.hour).show
 } ; nil
 
 #<Benchmark::Tms:0x00007fc9cca55508
@@ -172,5 +172,12 @@ pp Benchmark.measure {
  @stime=0.0018440000000000123,
  @total=0.023447000000000273,
  @utime=0.02160300000000026>
- => nil 
+ => nil
  ```
+
+| Interval | Aggregation time (seconds) |
+|:--------:|:--------------------------:|
+| 1 minute |            0.0             |
+|  1 hour  |            0.11            |
+| 12 hours |            1.6             |
+| 24 hours |            3.5             |
