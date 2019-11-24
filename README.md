@@ -129,51 +129,8 @@ The implementation is based on **Redis** commands such as:
 - [`mget`](https://redis.io/commands/mget)
 - [`setex`](https://redis.io/commands/setex)
 
-which are extremely fast:
+which are extremely fast.
 
-```bash
-require 'ezmetrics'
-require 'pp'
-```
-
-```ruby
-pp Benchmark.measure {
-  EZmetrics.new(1.hour).log(
-    status:   rand(200..500),
-    duration: rand(10000),
-    views:    rand(8000),
-    db:       rand(6000),
-    queries:  rand(100)
-  )
-} ; nil
-
-#<Benchmark::Tms:0x00007fc9cc995370
- @cstime=0.0,
- @cutime=0.0,
- @label="",
- @real=0.000742000003810972,
- @stime=0.00018599999999999173,
- @total=0.0005780000000001617,
- @utime=0.00039200000000017>
- => nil
-
-```
-
-```ruby
-pp Benchmark.measure {
-  EZmetrics.new(1.hour).show
-} ; nil
-
-#<Benchmark::Tms:0x00007fc9cca55508
- @cstime=0.0,
- @cutime=0.0,
- @label="",
- @real=0.025030000018887222,
- @stime=0.0018440000000000123,
- @total=0.023447000000000273,
- @utime=0.02160300000000026>
- => nil
- ```
 
 | Interval | Aggregation time (seconds) |
 |:--------:|:--------------------------:|
