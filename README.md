@@ -131,10 +131,17 @@ The implementation is based on **Redis** commands such as:
 
 which are extremely fast.
 
+You can check the **aggregation** time by running:
 
-| Interval | Aggregation time (seconds) |
-|:--------:|:--------------------------:|
-| 1 minute |            0.0             |
-|  1 hour  |            0.11            |
-| 12 hours |            1.6             |
-| 24 hours |            3.5             |
+```ruby
+EZmetrics::Benchmark.new.measure_aggregation
+```
+
+The result of running this benchmark on a *2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM*:
+
+| Interval | Duration (seconds) |
+|:--------:|:------------------:|
+| 1 minute |        0.0         |
+|  1 hour  |        0.11        |
+| 12 hours |        1.6         |
+| 24 hours |        3.5         |

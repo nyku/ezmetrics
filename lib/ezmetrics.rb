@@ -154,3 +154,5 @@ class EZmetrics
     }
   end
 end
+
+require "ezmetrics/benchmark"
