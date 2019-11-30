@@ -28,12 +28,24 @@ You can change the timeframe according to your needs and save the metrics by cal
 
 ```ruby
   # Store the metrics for 60 seconds (default behaviour)
-  EZmetrics.new.log(duration: 100.5, views: 40.7, db: 59.8, queries: 4, status: 200)
+  EZmetrics.new.log(
+    duration: 100.5,
+    views:    40.7,
+    db:       59.8,
+    queries:  4,
+    status:   200
+  )
 ```
 
 ```ruby
   # Store the metrics for 10 minutes
-  EZmetrics.new(10.minutes).log(duration: 100.5, views: 40.7, db: 59.8, queries: 4, status: 200)
+  EZmetrics.new(10.minutes).log(
+    duration: 100.5,
+    views:    40.7,
+    db:       59.8,
+    queries:  4,
+    status:   200
+  )
 ```
 
 ---
@@ -50,7 +62,7 @@ For displaying metrics you need to call `show` method:
   EZmetrics.new(10.minutes).show
 ```
 
-> Please note that you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
+You can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
 
 ### Capture metrics
 
