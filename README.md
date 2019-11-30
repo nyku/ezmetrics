@@ -4,7 +4,6 @@
 
 A simple tool for capturing and displaying Rails metrics.
 
-
 ## Installation
 
 ```
@@ -16,6 +15,7 @@ gem 'ezmetrics'
 ### Getting started
 
 This tool captures and aggregates Rails application metrics such as
+
 - `duration`
 - `views`
 - `db`
@@ -30,6 +30,7 @@ You can change the timeframe according to your needs and save the metrics by cal
   # Store the metrics for 60 seconds (default behaviour)
   EZmetrics.new.log(duration: 100.5, views: 40.7, db: 59.8, queries: 4, status: 200)
 ```
+
 or
 
 ```ruby
@@ -52,7 +53,6 @@ or
 ```
 
 > Please note that you can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
-
 
 ### Capture metrics
 
@@ -121,6 +121,86 @@ This will return a hash with the following structure:
 }
 ```
 
+### Output configuration
+
+The output can be easily configured by specifying aggregation options as in the following examples:
+
+1. Single
+
+```ruby
+EZmetrics.new.show(duration: :max)
+```
+
+```ruby
+{
+  duration: {
+    max: 9675
+  }
+}
+```
+
+2. Multiple
+
+```ruby
+EZmetrics.new.show(queries: [:max, :avg])
+```
+
+```ruby
+{
+  queries: {
+    avg: 26,
+    max: 76
+  }
+}
+```
+
+3. Requests
+
+```ruby
+EZmetrics.new.show(requests: true)
+```
+
+```ruby
+{
+  requests: {
+    all: 2000,
+    grouped: {
+      "2xx" => 1900,
+      "3xx" => 15,
+      "4xx" => 80,
+      "5xx" => 5
+    }
+  }
+}
+```
+
+4. Combined
+
+```ruby
+EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
+```
+
+```ruby
+{
+  views: {
+    avg: 12
+  },
+  db: {
+    avg: 155,
+    max: 4382
+  },
+  requests: {
+    all: 2000,
+    grouped: {
+      "2xx" => 1900,
+      "3xx" => 15,
+      "4xx" => 80,
+      "5xx" => 5
+    }
+  }
+}
+```
+
 ### Performance
 
 The implementation is based on **Redis** commands such as:
@@ -137,11 +217,12 @@ You can check the **aggregation** time by running:
 EZmetrics::Benchmark.new.measure_aggregation
 ```
 
-The result of running this benchmark on a *2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM*:
+The result of running this benchmark on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_:
 
 | Interval | Duration (seconds) |
-|:--------:|:------------------:|
+| :------: | :----------------: |
 | 1 minute |        0.0         |
-|  1 hour  |        0.11        |
-| 12 hours |        1.6         |
-| 24 hours |        3.5         |
+|  1 hour  |        0.05        |
+| 12 hours |        0.66        |
+| 24 hours |        1.83        |
+| 48 hours |        4.06        |

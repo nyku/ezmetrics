@@ -40,7 +40,7 @@ describe EZmetrics do
         }
       )
 
-      puts subject.log(duration: 12.4, views: 9.4, db: 25.8, queries: 3, status: 301)
+      subject.log(duration: 12.4, views: 9.4, db: 25.8, queries: 3, status: 301)
       expect(subject.show).to eq(
         {
           duration: {
@@ -136,6 +136,49 @@ describe EZmetrics do
       )
     end
 
+    it "should perform partial aggregation" do
+      subject.log(duration: 10.4, views: 8, db: 12.5, queries: 2, status: 200)
+      subject.log(duration: 12.4, views: 9.4, db: 25.8, queries: 3, status: 301)
+      subject.log(duration: 100.4, views: 52.3, db: 20.8, queries: 1, status: 404)
+      subject.log(duration: 100.4, views: 45, db: nil, queries: 4, status: 500)
+
+      expect(subject.show(wrong: :key)).to eq({})
+
+      expect(subject.show(duration: [:avg, :max], queries: :max)).to eq(
+        {
+          duration: {
+            avg: 56,
+            max: 100
+          },
+          queries: {
+            max: 4
+          }
+        }
+      )
+
+      expect(subject.show(views: :avg)).to eq(
+        {
+          views: {
+            avg: 29
+          }
+        }
+      )
+
+      expect(subject.show(requests: true)).to eq(
+        {
+          requests: {
+            all: 4,
+            grouped: {
+              "2xx" => 1,
+              "3xx" => 1,
+              "4xx" => 1,
+              "5xx" => 1
+            }
+          }
+        }
+      )
+    end
+
     it "should expire stored keys" do
       described_class.new(1).log(duration: 100.5, views: 71.4, db: 24.4, queries: 1, status: 200)
       expect(subject.show).to eq(
@@ -170,13 +213,7 @@ describe EZmetrics do
 
       sleep(1)
 
-      expect(subject.show).to eq({
-        duration: { avg: 0, max: 0 },
-        views:    { avg: 0, max: 0 },
-        db:       { avg: 0, max: 0 },
-        queries:  { avg: 0, max: 0 },
-        requests: {}
-      })
+      expect(subject.show).to eq({})
     end
 
     it "should handle log/show errors" do
@@ -188,13 +225,7 @@ describe EZmetrics do
       expect(log_result[:message]).to   include("undefined method `get'")
       expect(log_result[:backtrace]).to be
 
-      expect(subject.show).to eq({
-        duration: { avg: 0, max: 0 },
-        views:    { avg: 0, max: 0 },
-        db:       { avg: 0, max: 0 },
-        queries:  { avg: 0, max: 0 },
-        requests: {}
-      })
+      expect(subject.show).to eq({})
     end
   end
 end
