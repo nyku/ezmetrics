@@ -148,8 +148,8 @@ EZmetrics.new.show(queries: [:max, :avg])
 ```ruby
 {
   queries: {
-    avg: 26,
-    max: 76
+    max: 76,
+    avg: 26
   }
 }
 ```

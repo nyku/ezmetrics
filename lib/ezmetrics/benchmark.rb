@@ -3,12 +3,11 @@ require "benchmark"
 class EZmetrics::Benchmark
 
   def initialize
-    @start               = Time.now.to_i
-    @redis               = Redis.new
-    @durations           = []
-    @iterations          = 3
-    @requests_per_second = 100
-    @intervals           = {
+    @start      = Time.now.to_i
+    @redis      = Redis.new
+    @durations  = []
+    @iterations = 3
+    @intervals  = {
       "1.minute" => 60,
       "1.hour  " => 3600,
       "12.hours" => 43200,
@@ -30,7 +29,7 @@ class EZmetrics::Benchmark
 
   private
 
-  attr_reader :start, :redis, :durations, :intervals, :iterations, :requests_per_second
+  attr_reader :start, :redis, :durations, :intervals, :iterations
 
   def write_metrics
     seconds = intervals.values.max
