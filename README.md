@@ -31,21 +31,19 @@ You can change the timeframe according to your needs and save the metrics by cal
   EZmetrics.new.log(duration: 100.5, views: 40.7, db: 59.8, queries: 4, status: 200)
 ```
 
-or
-
 ```ruby
   # Store the metrics for 10 minutes
   EZmetrics.new(10.minutes).log(duration: 100.5, views: 40.7, db: 59.8, queries: 4, status: 200)
 ```
 
-For displaying metrics you need call `show` method:
+---
+
+For displaying metrics you need to call `show` method:
 
 ```ruby
   # Aggregate and show metrics for last 60 seconds (default behaviour)
   EZmetrics.new.show
 ```
-
-or
 
 ```ruby
   # Aggregate and show metrics for last 10 minutes
@@ -121,11 +119,11 @@ This will return a hash with the following structure:
 }
 ```
 
-### Output configuration
+### Aggregation options
 
-The output can be easily configured by specifying aggregation options as in the following examples:
+The aggregation can be easily configured by specifying aggregation options as in the following examples:
 
-1. Single
+**1. Single**
 
 ```ruby
 EZmetrics.new.show(duration: :max)
@@ -139,7 +137,9 @@ EZmetrics.new.show(duration: :max)
 }
 ```
 
-2. Multiple
+---
+
+**2. Multiple**
 
 ```ruby
 EZmetrics.new.show(queries: [:max, :avg])
@@ -154,7 +154,9 @@ EZmetrics.new.show(queries: [:max, :avg])
 }
 ```
 
-3. Requests
+---
+
+**3. Requests**
 
 ```ruby
 EZmetrics.new.show(requests: true)
@@ -174,7 +176,9 @@ EZmetrics.new.show(requests: true)
 }
 ```
 
-4. Combined
+---
+
+**4. Combined**
 
 ```ruby
 EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
@@ -203,13 +207,7 @@ EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
 
 ### Performance
 
-The implementation is based on **Redis** commands such as:
-
-- [`get`](https://redis.io/commands/get)
-- [`mget`](https://redis.io/commands/mget)
-- [`setex`](https://redis.io/commands/setex)
-
-which are extremely fast.
+The aggregation speed relies on the performance of **Redis** (data storage) and **Oj** (json serialization/parsing).
 
 You can check the **aggregation** time by running:
 
@@ -222,7 +220,7 @@ The result of running this benchmark on a _2017 Macbook Pro 2.9 GHz Intel Core i
 | Interval | Duration (seconds) |
 | :------: | :----------------: |
 | 1 minute |        0.0         |
-|  1 hour  |        0.05        |
-| 12 hours |        0.66        |
-| 24 hours |        1.83        |
-| 48 hours |        4.06        |
+|  1 hour  |        0.04        |
+| 12 hours |        0.49        |
+| 24 hours |        1.51        |
+| 48 hours |        3.48        |

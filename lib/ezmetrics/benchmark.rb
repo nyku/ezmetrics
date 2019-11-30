@@ -52,14 +52,14 @@ class EZmetrics::Benchmark
           "all" => rand(40)
         }
       }
-      redis.setex("ez-metrics:#{second}", seconds, Oj.dump(payload))
+      redis.setex(second, seconds, Oj.dump(payload))
     end
     nil
   end
 
   def cleanup_metrics
     interval_start = Time.now.to_i - intervals.values.max - 100
-    interval_keys  = (interval_start..Time.now.to_i).to_a.map { |second| "ez-metrics:#{second}" }
+    interval_keys  = (interval_start..Time.now.to_i).to_a
     redis.del(interval_keys)
   end
 

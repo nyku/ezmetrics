@@ -9,7 +9,6 @@ class EZmetrics
   def initialize(interval_seconds=60)
     @interval_seconds = interval_seconds.to_i
     @redis            = Redis.new
-    @storage_key      = "ez-metrics"
   end
 
   def log(payload={duration: 0.0, views: 0.0, db: 0.0, queries: 0, status: 200})
@@ -23,7 +22,7 @@ class EZmetrics
 
     this_second          = Time.now.to_i
     status_group         = "#{payload[:status].to_s[0]}xx"
-    @this_second_metrics = redis.get("#{storage_key}:#{this_second}")
+    @this_second_metrics = redis.get(this_second)
 
     if this_second_metrics
       @this_second_metrics = Oj.load(this_second_metrics)
@@ -51,7 +50,7 @@ class EZmetrics
       this_second_metrics["statuses"][status_group] = 1
     end
 
-    redis.setex("#{storage_key}:#{this_second}", interval_seconds, Oj.dump(this_second_metrics))
+    redis.setex(this_second, interval_seconds, Oj.dump(this_second_metrics))
     true
   rescue => error
     formatted_error(error)
@@ -60,12 +59,12 @@ class EZmetrics
   def show(options=nil)
     @options          = options || default_options
     interval_start    = Time.now.to_i - interval_seconds
-    interval_keys     = (interval_start..Time.now.to_i).to_a.map { |second| "#{storage_key}:#{second}" }
+    interval_keys     = (interval_start..Time.now.to_i).to_a
     @interval_metrics = redis.mget(interval_keys).compact.map { |hash| Oj.load(hash) }
 
     return {} unless interval_metrics.any?
 
-    @requests = interval_metrics.map { |hash| hash["statuses"]["all"] }.compact.sum
+    @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
     build_result
   rescue
     {}
@@ -79,17 +78,7 @@ class EZmetrics
   def build_result
     result = {}
 
-    if options[:requests]
-      result[:requests] = {
-        all: requests,
-        grouped: {
-          "2xx" => count("2xx"),
-          "3xx" => count("3xx"),
-          "4xx" => count("4xx"),
-          "5xx" => count("5xx")
-        }
-      }
-    end
+    result[:requests] = { all: requests, grouped: count_all_status_groups } if options[:requests]
 
     options.each do |metrics, aggregation_functions|
       next unless METRICS.include?(metrics)
@@ -108,29 +97,35 @@ class EZmetrics
 
   def aggregate(metrics, aggregation_function)
     return unless AGGREGATION_FUNCTIONS.include?(aggregation_function)
-    return avg("#{metrics}_sum".to_sym) if aggregation_function == :avg
-    return max("#{metrics}_max".to_sym) if aggregation_function == :max
+    return avg("#{metrics}_sum") if aggregation_function == :avg
+    return max("#{metrics}_max") if aggregation_function == :max
   end
 
   def update_sum(metrics)
-    this_second_metrics["#{metrics}_sum"] += safe_payload[metrics.to_sym]
+    this_second_metrics["#{metrics}_sum"] += safe_payload[metrics]
   end
 
   def update_max(metrics)
-    max_value = [safe_payload[metrics.to_sym], this_second_metrics["#{metrics}_max"]].max
+    max_value = [safe_payload[metrics], this_second_metrics["#{metrics}_max"]].max
     this_second_metrics["#{metrics}_max"] = max_value
   end
 
   def avg(metrics)
-    (interval_metrics.map { |h| h[metrics.to_s] }.sum.to_f / requests).round
+    (interval_metrics.sum { |h| h[metrics] }.to_f / requests).round
   end
 
   def max(metrics)
-    interval_metrics.map { |h| h[metrics.to_s] }.max.round
+    interval_metrics.max { |h| h[metrics] }[metrics].round
   end
 
-  def count(group)
-    interval_metrics.map { |h| h["statuses"][group.to_s] }.sum
+  def count_all_status_groups
+    interval_metrics.inject({ "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0 }) do |result, h|
+      result["2xx"] += h["statuses"]["2xx"]
+      result["3xx"] += h["statuses"]["3xx"]
+      result["4xx"] += h["statuses"]["4xx"]
+      result["5xx"] += h["statuses"]["5xx"]
+      result
+    end
   end
 
   def default_options

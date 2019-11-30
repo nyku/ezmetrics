@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ezmetrics (1.1.0)
+    ezmetrics (1.1.1)
       hiredis (~> 0.6.3)
       oj (~> 3.10)
       redis (~> 4.0)
