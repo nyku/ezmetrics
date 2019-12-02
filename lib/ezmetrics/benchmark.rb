@@ -16,11 +16,11 @@ class EZmetrics::Benchmark
     }
   end
 
-  def measure_aggregation
+  def measure_aggregation(partition_by=nil)
     write_metrics
     print_header
     intervals.each do |interval, seconds|
-      result = measure_aggregation_time(interval, seconds)
+      result = measure_aggregation_time(interval, seconds, partition_by)
       print_row(result)
     end
     cleanup_metrics
@@ -36,6 +36,7 @@ class EZmetrics::Benchmark
     seconds.times do |i|
       second = start - i
       payload = {
+        "second"          => second,
         "duration_sum"    => rand(10000),
         "duration_max"    => rand(10000),
         "views_sum"       => rand(1000),
@@ -45,11 +46,11 @@ class EZmetrics::Benchmark
         "queries_sum"     => rand(100),
         "queries_max"     => rand(100),
         "statuses"        => {
-          "2xx" => rand(10),
-          "3xx" => rand(10),
-          "4xx" => rand(10),
-          "5xx" => rand(10),
-          "all" => rand(40)
+          "2xx" => rand(1..10),
+          "3xx" => rand(1..10),
+          "4xx" => rand(1..10),
+          "5xx" => rand(1..10),
+          "all" => rand(1..40)
         }
       }
       redis.setex(second, seconds, Oj.dump(payload))
@@ -63,9 +64,15 @@ class EZmetrics::Benchmark
     redis.del(interval_keys)
   end
 
-  def measure_aggregation_time(interval, seconds)
+  def measure_aggregation_time(interval, seconds, partition_by)
     iterations.times do
-      durations << ::Benchmark.measure { EZmetrics.new(seconds).show }.real
+      durations << ::Benchmark.measure do
+        if partition_by
+          EZmetrics.new(seconds).partition_by(partition_by).show
+        else
+          EZmetrics.new(seconds).show
+        end
+      end.real
     end
 
     return {

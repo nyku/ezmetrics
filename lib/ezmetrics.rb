@@ -5,6 +5,7 @@ require "oj"
 class EZmetrics
   METRICS               = [:duration, :views, :db, :queries].freeze
   AGGREGATION_FUNCTIONS = [:max, :avg].freeze
+  PARTITION_UNITS       = [:second, :minute, :hour, :day].freeze
 
   def initialize(interval_seconds=60)
     @interval_seconds = interval_seconds.to_i
@@ -36,6 +37,7 @@ class EZmetrics
       this_second_metrics["statuses"][status_group] += 1
     else
       @this_second_metrics = {
+        "second"       => this_second,
         "duration_sum" => safe_payload[:duration],
         "duration_max" => safe_payload[:duration],
         "views_sum"    => safe_payload[:views],
@@ -57,23 +59,38 @@ class EZmetrics
   end
 
   def show(options=nil)
-    @options          = options || default_options
-    interval_start    = Time.now.to_i - interval_seconds
-    interval_keys     = (interval_start..Time.now.to_i).to_a
-    @interval_metrics = redis.mget(interval_keys).compact.map { |hash| Oj.load(hash) }
+    @options = options || default_options
+    partitioned_metrics ? aggregate_partitioned_data : aggregate_data
+  end
 
+  def partition_by(time_unit=:minute)
+    time_unit = PARTITION_UNITS.include?(time_unit) ? time_unit : :minute
+    @partitioned_metrics = interval_metrics.group_by { |h| second_to_partition_unit(time_unit, h["second"]) }
+    self
+  end
+
+  private
+
+  attr_reader :redis, :interval_seconds, :interval_metrics, :requests,
+    :storage_key, :safe_payload, :this_second_metrics, :partitioned_metrics, :options
+
+  def aggregate_data
     return {} unless interval_metrics.any?
-
     @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
     build_result
   rescue
     {}
   end
 
-  private
-
-  attr_reader :redis, :interval_seconds, :interval_metrics, :requests,
-    :storage_key, :safe_payload, :this_second_metrics, :options
+  def aggregate_partitioned_data
+    partitioned_metrics.map do |partition, metrics|
+      @interval_metrics = metrics
+      @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
+      { timestamp: partition, data: build_result }
+    end
+  rescue
+    new(options)
+  end
 
   def build_result
     result = {}
@@ -93,6 +110,22 @@ class EZmetrics
     result
   ensure
     result
+  end
+
+  def second_to_partition_unit(time_unit, second)
+    return second if time_unit == :second
+    time_unit_depth = { minute: 4, hour: 3, day: 2 }
+    reset_depth     = time_unit_depth[time_unit]
+    time_to_array   = Time.at(second).to_a[0..5].reverse
+    Time.new(*time_to_array[0..reset_depth]).to_i
+  end
+
+  def interval_metrics
+    @interval_metrics ||= begin
+      interval_start    = Time.now.to_i - interval_seconds
+      interval_keys     = (interval_start..Time.now.to_i).to_a
+      redis.mget(interval_keys).compact.map { |hash| Oj.load(hash) }
+    end
   end
 
   def aggregate(metrics, aggregation_function)

@@ -131,7 +131,7 @@ This will return a hash with the following structure:
 }
 ```
 
-### Aggregation options
+### Aggregation
 
 The aggregation can be easily configured by specifying aggregation options as in the following examples:
 
@@ -217,6 +217,59 @@ EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
 }
 ```
 
+### Partitioning
+
+To aggregate metrics, partitioned by a unit of time you need to call `partition_by({time_unit})` before calling `show`
+
+```ruby
+  # Aggregate metrics for last hour, partition by minute
+  EZmetrics.new(1.hour).partition_by(:minute).show(duration: [:avg, :max], db: :avg)
+```
+
+This will return an array of objects the following structure:
+
+```ruby
+[
+  {
+    timestamp: # UNIX timestamp
+    data:      # a hash with aggregated metrics
+  }
+]
+```
+
+like in the example below:
+
+```ruby
+[
+  {
+    timestamp: 1575242880,
+    data: {
+      duration: {
+        avg: 477,
+        max: 8566
+      },
+      db: {
+        avg: 387
+      }
+    }
+  },
+  {
+    timestamp: 1575242940,
+    data: {
+      duration: {
+        avg: 234,
+        max: 3675
+      },
+      db: {
+        avg: 123
+      }
+    }
+  }
+]
+```
+
+Available time units for partitioning: `second`, `minute`, `hour`, `day`. Default: `minute`.
+
 ### Performance
 
 The aggregation speed relies on the performance of **Redis** (data storage) and **Oj** (json serialization/parsing).
@@ -227,8 +280,6 @@ You can check the **aggregation** time by running:
 EZmetrics::Benchmark.new.measure_aggregation
 ```
 
-The result of running this benchmark on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_:
-
 | Interval | Duration (seconds) |
 | :------: | :----------------: |
 | 1 minute |        0.0         |
@@ -236,3 +287,21 @@ The result of running this benchmark on a _2017 Macbook Pro 2.9 GHz Intel Core i
 | 12 hours |        0.49        |
 | 24 hours |        1.51        |
 | 48 hours |        3.48        |
+
+---
+
+To check the **partitioned aggregation** time you need to run:
+
+```ruby
+EZmetrics::Benchmark.new.measure_aggregation(:minute)
+```
+
+| Interval | Duration (seconds) |
+| :------: | :----------------: |
+| 1 minute |        0.0         |
+|  1 hour  |        0.05        |
+| 12 hours |        0.74        |
+| 24 hours |        2.12        |
+| 48 hours |        4.85        |
+
+The benchmarks above were run on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_

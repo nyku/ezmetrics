@@ -1,12 +1,13 @@
 Gem::Specification.new do |gem|
   gem.name                  = "ezmetrics"
-  gem.version               = "1.1.1"
+  gem.version               = "1.2.0"
   gem.date                  = "2019-11-22"
   gem.summary               = "Rails metrics aggregation tool."
-  gem.description           = "A simple tool for capturing and displaying Rails metrics."
+  gem.description           = "Simple, lightweight and fast metrics aggregation for Rails."
   gem.authors               = ["Nicolae Rotaru"]
   gem.email                 = "nyku.rn@gmail.com"
-  gem.homepage              = "https://github.com/nyku/ezmetrics"
+  gem.homepage              = "https://nyku.github.io/ezmetrics"
+  gem.metadata              = { "source_code_uri" => "https://github.com/nyku/ezmetrics" }
   gem.license               = "GPL-3.0"
   gem.files                 = ["lib/ezmetrics.rb", "lib/ezmetrics/benchmark.rb", "LICENSE", "README.md"]
   gem.require_paths         = ["lib"]
