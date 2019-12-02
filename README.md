@@ -219,6 +219,8 @@ EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
 
 ### Partitioning
 
+If you want to visualize your metrics by using a **line chart**, you will need to use partitioning.
+
 To aggregate metrics, partitioned by a unit of time you need to call `partition_by({time_unit})` before calling `show`
 
 ```ruby
