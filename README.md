@@ -226,7 +226,7 @@ To aggregate metrics, partitioned by a unit of time you need to call `partition_
   EZmetrics.new(1.hour).partition_by(:minute).show(duration: [:avg, :max], db: :avg)
 ```
 
-This will return an array of objects the following structure:
+This will return an array of objects with the following structure:
 
 ```ruby
 [
