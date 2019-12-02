@@ -114,10 +114,10 @@ class EZmetrics
 
   def second_to_partition_unit(time_unit, second)
     return second if time_unit == :second
-    time_unit_depth = { minute: 4, hour: 3, day: 2 }
-    reset_depth     = time_unit_depth[time_unit]
-    time_to_array   = Time.at(second).to_a[0..5].reverse
-    Time.new(*time_to_array[0..reset_depth]).to_i
+    time = Time.at(second)
+    return (time - time.sec - time.min * 60 - time.hour * 3600).to_i if time_unit == :day
+    return (time - time.sec - time.min * 60).to_i                    if time_unit == :hour
+    (time - time.sec).to_i
   end
 
   def interval_metrics

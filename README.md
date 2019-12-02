@@ -301,9 +301,9 @@ EZmetrics::Benchmark.new.measure_aggregation(:minute)
 | Interval | Duration (seconds) |
 | :------: | :----------------: |
 | 1 minute |        0.0         |
-|  1 hour  |        0.05        |
-| 12 hours |        0.74        |
-| 24 hours |        2.12        |
-| 48 hours |        4.85        |
+|  1 hour  |        0.04        |
+| 12 hours |        0.53        |
+| 24 hours |        1.59        |
+| 48 hours |        3.51        |
 
 The benchmarks above were run on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_
