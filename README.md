@@ -27,25 +27,25 @@ and stores them for the timeframe you specified, 60 seconds by default.
 You can change the timeframe according to your needs and save the metrics by calling `log` method:
 
 ```ruby
-  # Store the metrics for 60 seconds (default behaviour)
-  EZmetrics.new.log(
-    duration: 100.5,
-    views:    40.7,
-    db:       59.8,
-    queries:  4,
-    status:   200
-  )
+# Store the metrics for 60 seconds (default behaviour)
+EZmetrics.new.log(
+  duration: 100.5,
+  views:    40.7,
+  db:       59.8,
+  queries:  4,
+  status:   200
+)
 ```
 
 ```ruby
-  # Store the metrics for 10 minutes
-  EZmetrics.new(10.minutes).log(
-    duration: 100.5,
-    views:    40.7,
-    db:       59.8,
-    queries:  4,
-    status:   200
-  )
+# Store the metrics for 10 minutes
+EZmetrics.new(10.minutes).log(
+  duration: 100.5,
+  views:    40.7,
+  db:       59.8,
+  queries:  4,
+  status:   200
+)
 ```
 
 ---
@@ -53,13 +53,13 @@ You can change the timeframe according to your needs and save the metrics by cal
 For displaying metrics you need to call `show` method:
 
 ```ruby
-  # Aggregate and show metrics for last 60 seconds (default behaviour)
-  EZmetrics.new.show
+# Aggregate and show metrics for last 60 seconds (default behaviour)
+EZmetrics.new.show
 ```
 
 ```ruby
-  # Aggregate and show metrics for last 10 minutes
-  EZmetrics.new(10.minutes).show
+# Aggregate and show metrics for last 10 minutes
+EZmetrics.new(10.minutes).show
 ```
 
 You can combine these timeframes, for example - store for 10 minutes, display for 5 minutes.
@@ -129,6 +129,47 @@ This will return a hash with the following structure:
     }
   }
 }
+```
+
+---
+
+If you prefer a single level object - you can change the default output structure by calling `.flatten` before `.show`
+
+```ruby
+EZmetrics.new(1.hour).flatten.show(db: :avg, duration: [:avg, :max])
+```
+
+```ruby
+{
+  db_avg:       182,
+  duration_avg: 205,
+  duration_max: 5171
+}
+```
+
+---
+
+Same for [partitioned aggregation](#partitioning)
+
+```ruby
+EZmetrics.new(1.hour).partition_by(:minute).flatten.show(db: :avg, duration: [:avg, :max])
+```
+
+```ruby
+[
+  {
+    timestamp:    1575242880,
+    db_avg:       387,
+    duration_avg: 477,
+    duration_max: 8566
+  },
+  {
+    timestamp:    1575242940,
+    db_avg:       123,
+    duration_avg: 234,
+    duration_max: 3675
+  }
+]
 ```
 
 ### Aggregation
@@ -221,11 +262,11 @@ EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
 
 If you want to visualize your metrics by using a **line chart**, you will need to use partitioning.
 
-To aggregate metrics, partitioned by a unit of time you need to call `partition_by({time_unit})` before calling `show`
+To aggregate metrics, partitioned by a unit of time you need to call `.partition_by({time_unit})` before calling `.show`
 
 ```ruby
-  # Aggregate metrics for last hour, partition by minute
-  EZmetrics.new(1.hour).partition_by(:minute).show(duration: [:avg, :max], db: :avg)
+# Aggregate metrics for last hour, partition by minute
+EZmetrics.new(1.hour).partition_by(:minute).show(duration: [:avg, :max], db: :avg)
 ```
 
 This will return an array of objects with the following structure:

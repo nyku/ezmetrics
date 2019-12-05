@@ -63,6 +63,11 @@ class EZmetrics
     partitioned_metrics ? aggregate_partitioned_data : aggregate_data
   end
 
+  def flatten
+    @flat = true
+    self
+  end
+
   def partition_by(time_unit=:minute)
     time_unit = PARTITION_UNITS.include?(time_unit) ? time_unit : :minute
     @partitioned_metrics = interval_metrics.group_by { |h| second_to_partition_unit(time_unit, h["second"]) }
@@ -71,7 +76,7 @@ class EZmetrics
 
   private
 
-  attr_reader :redis, :interval_seconds, :interval_metrics, :requests,
+  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :flat,
     :storage_key, :safe_payload, :this_second_metrics, :partitioned_metrics, :options
 
   def aggregate_data
@@ -86,7 +91,7 @@ class EZmetrics
     partitioned_metrics.map do |partition, metrics|
       @interval_metrics = metrics
       @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
-      { timestamp: partition, data: build_result }
+      flat ? { timestamp: partition, **build_result } : { timestamp: partition, data: build_result }
     end
   rescue
     new(options)
@@ -95,7 +100,9 @@ class EZmetrics
   def build_result
     result = {}
 
-    result[:requests] = { all: requests, grouped: count_all_status_groups } if options[:requests]
+    if options[:requests]
+      append_requests_to_result(result, { all: requests, grouped: count_all_status_groups })
+    end
 
     options.each do |metrics, aggregation_functions|
       next unless METRICS.include?(metrics)
@@ -103,13 +110,29 @@ class EZmetrics
       next unless aggregation_functions.any?
 
       aggregation_functions.each do |aggregation_function|
-        result[metrics] ||= {}
-        result[metrics][aggregation_function] = aggregate(metrics, aggregation_function)
+        aggregated_metrics = aggregate(metrics, aggregation_function)
+        append_metrics_to_result(result, metrics, aggregation_function, aggregated_metrics)
       end
     end
     result
   ensure
     result
+  end
+
+  def append_requests_to_result(result, aggregated_requests)
+    return result[:requests] = aggregated_requests unless flat
+
+    result[:requests_all] = aggregated_requests[:all]
+    aggregated_requests[:grouped].each do |group, counter|
+      result[:"requests_#{group}"] = counter
+    end
+  end
+
+  def append_metrics_to_result(result, metrics, aggregation_function, aggregated_metrics)
+    return result[:"#{metrics}_#{aggregation_function}"] = aggregated_metrics if flat
+
+    result[metrics] ||= {}
+    result[metrics][aggregation_function] = aggregated_metrics
   end
 
   def second_to_partition_unit(time_unit, second)

@@ -21,6 +21,26 @@ describe EZmetrics do
       )
     end
 
+    it "should display flat view" do
+      expect(subject.flatten.show).to eq(
+        {
+          duration_avg: 56,
+          duration_max: 100,
+          views_avg:    29,
+          views_max:    52,
+          db_avg:       15,
+          db_max:       26,
+          queries_avg:  3,
+          queries_max:  4,
+          requests_all: 4,
+          requests_2xx: 1,
+          requests_3xx: 1,
+          requests_4xx: 1,
+          requests_5xx: 1
+        }
+      )
+    end
+
     it "should perform partial aggregation (wrong options)" do
       expect(subject.show(wrong: :key)).to eq({})
     end
@@ -145,6 +165,31 @@ describe EZmetrics do
               db:       { max: 21, avg: 15 },
               queries:  { max: 4, avg: 3 }
             }
+          }
+        ]
+      )
+    end
+
+    it "should display flat view" do
+      log_metrics!(1)
+
+      expect(EZmetrics.new.flatten.partition_by(:hour).show).to eq(
+        [
+          {
+            timestamp: Time.new(*Time.now.to_a[0..5].reverse[0..3]).to_i,
+            duration_avg: 56,
+            duration_max: 100,
+            views_avg:    29,
+            views_max:    52,
+            db_avg:       15,
+            db_max:       21,
+            queries_avg:  3,
+            queries_max:  4,
+            requests_all: 4,
+            requests_2xx: 1,
+            requests_3xx: 1,
+            requests_4xx: 1,
+            requests_5xx: 1
           }
         ]
       )
