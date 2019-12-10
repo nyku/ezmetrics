@@ -176,16 +176,16 @@ class EZmetrics
 
     percentile = aggregation_function.match(/percentile_(?<value>\d+)/)
 
-    if percentile && percentile["value"]
+    if percentile && percentile["value"].to_i.between?(1, 99)
       sorted_values = send("sorted_#{metrics}_values")
-      percentile(sorted_values, percentile["value"].to_i)&.round
+      percentile(sorted_values, percentile["value"].to_i)
     end
   end
 
   METRICS.each do |metrics|
     define_method "sorted_#{metrics}_values" do
       instance_variable_get("@sorted_#{metrics}_values") || instance_variable_set(
-        "@sorted_#{metrics}_values", interval_metrics.map { |array| array[schema["#{metrics}_values"]] }.flatten.compact
+        "@sorted_#{metrics}_values", interval_metrics.map { |array| array[schema["#{metrics}_values"]] }.flatten.compact.sort
       )
     end
   end
@@ -234,12 +234,12 @@ class EZmetrics
     interval_metrics.max { |array| array[schema[metrics]] }[schema[metrics]].round
   end
 
-  def percentile(array, pcnt)
-    sorted_array = array.sort
+  def percentile(sorted_array, pcnt)
+    array_length = sorted_array.length
 
-    return nil if array.length == 0
+    return "not enough data (requests: #{array_length}, required: #{pcnt})" if array_length < pcnt
 
-    rank  = (pcnt.to_f / 100) * (array.length + 1)
+    rank  = (pcnt.to_f / 100) * (array_length + 1)
     whole = rank.truncate
 
     # if has fractional part
@@ -249,9 +249,9 @@ class EZmetrics
 
       f = (rank - rank.truncate).abs
 
-      return (f * (s1 - s0)) + s0
+      return ((f * (s1 - s0)) + s0)&.round
     else
-      return sorted_array[whole - 1]
+      return (sorted_array[whole - 1])&.round
     end
   end
 

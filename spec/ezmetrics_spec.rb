@@ -24,15 +24,11 @@ describe EZmetrics do
     it "should handle percentiles" do
       redis.flushdb
 
-      values = Array.new(101) { |i| (i.to_f*1.9+1).round(2) }
+      values = Array.new(101) { |i| (i.to_f*1.9+1).round(2) }.shuffle
 
       values.each do |value|
         subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
       end
-
-      expect(subject.send(:percentile, values, 90).round(2)).to eq(173.52)
-      expect(subject.send(:percentile, values, 95).round(2)).to eq(183.21)
-      expect(subject.send(:percentile, values, 99).round(2)).to eq(190.96)
 
       expect(
         subject.show(
@@ -43,6 +39,24 @@ describe EZmetrics do
         {
           duration: { percentile_90: 174 },
           views:    { percentile_95: 183, percentile_99: 191 }
+        }
+      )
+    end
+
+    it "should handle percentiles with not enough data" do
+      redis.flushdb
+
+      values = Array.new(98) { |i| (i.to_f*1.9+1).round(2) }.shuffle
+
+      values.each do |value|
+        subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
+      end
+
+      expect(
+        subject.show(duration: [:percentile_90, :percentile_99])
+      ).to eq(
+        {
+          duration: { percentile_90: 168, percentile_99: "not enough data (requests: 98, required: 99)" }
         }
       )
     end
