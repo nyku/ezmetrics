@@ -21,6 +21,32 @@ describe EZmetrics do
       )
     end
 
+    it "should handle percentiles" do
+      redis.flushdb
+
+      values = Array.new(101) { |i| (i.to_f*1.9+1).round(2) }
+
+      values.each do |value|
+        subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
+      end
+
+      expect(subject.send(:percentile, values, 90).round(2)).to eq(173.52)
+      expect(subject.send(:percentile, values, 95).round(2)).to eq(183.21)
+      expect(subject.send(:percentile, values, 99).round(2)).to eq(190.96)
+
+      expect(
+        subject.show(
+          duration: :percentile_90,
+          views:    [:percentile_95, :percentile_99]
+        )
+      ).to eq(
+        {
+          duration: { percentile_90: 174 },
+          views:    { percentile_95: 183, percentile_99: 191 }
+        }
+      )
+    end
+
     it "should display flat view" do
       expect(subject.flatten.show).to eq(
         {

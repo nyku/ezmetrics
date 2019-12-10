@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ezmetrics (1.2.2)
+    ezmetrics (2.0.0)
       hiredis (~> 0.6.3)
       oj (~> 3.10)
       redis (~> 4.0)
@@ -11,8 +11,11 @@ GEM
   specs:
     diff-lcs (1.3)
     hiredis (0.6.3)
+    irb (1.1.0)
+      reline (>= 0.0.1)
     oj (3.10.0)
     redis (4.1.3)
+    reline (0.0.7)
     rspec (3.9.0)
       rspec-core (~> 3.9.0)
       rspec-expectations (~> 3.9.0)
@@ -33,6 +36,7 @@ PLATFORMS
 DEPENDENCIES
   ezmetrics!
   hiredis
+  irb
   oj
   redis (~> 4.0)
   rspec (~> 3.5)

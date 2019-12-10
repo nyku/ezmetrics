@@ -9,16 +9,18 @@ class EZmetrics
 
   def initialize(interval_seconds=60)
     @interval_seconds = interval_seconds.to_i
-    @redis            = Redis.new
+    @redis            = Redis.new(driver: :hiredis)
+    @schema           = redis_schema
   end
 
-  def log(payload={duration: 0.0, views: 0.0, db: 0.0, queries: 0, status: 200})
+  def log(payload={duration: 0.0, views: 0.0, db: 0.0, queries: 0, status: 200, store_each_value: false})
     @safe_payload = {
-      duration: payload[:duration].to_f,
-      views:    payload[:views].to_f,
-      db:       payload[:db].to_f,
-      queries:  payload[:queries].to_i,
-      status:   payload[:status].to_i
+      duration:         payload[:duration].to_f,
+      views:            payload[:views].to_f,
+      db:               payload[:db].to_f,
+      queries:          payload[:queries].to_i,
+      status:           payload[:status].to_i,
+      store_each_value: payload[:store_each_value].to_s == "true"
     }
 
     this_second          = Time.now.to_i
@@ -31,10 +33,11 @@ class EZmetrics
       METRICS.each do |metrics_type|
         update_sum(metrics_type)
         update_max(metrics_type)
+        store_value(metrics_type) if safe_payload[:store_each_value]
       end
 
-      this_second_metrics["statuses"]["all"]        += 1
-      this_second_metrics["statuses"][status_group] += 1
+      this_second_metrics[schema["all"]]        += 1
+      this_second_metrics[schema[status_group]] += 1
     else
       @this_second_metrics = {
         "second"       => this_second,
@@ -46,10 +49,25 @@ class EZmetrics
         "db_max"       => safe_payload[:db],
         "queries_sum"  => safe_payload[:queries],
         "queries_max"  => safe_payload[:queries],
-        "statuses"     => { "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0, "all" => 1 }
+        "2xx"          => 0,
+        "3xx"          => 0,
+        "4xx"          => 0,
+        "5xx"          => 0,
+        "all"          => 1
       }
 
-      this_second_metrics["statuses"][status_group] = 1
+      if safe_payload[:store_each_value]
+        this_second_metrics.merge!(
+          "duration_values" => [safe_payload[:duration]],
+          "views_values"    => [safe_payload[:views]],
+          "db_values"       => [safe_payload[:db]],
+          "queries_values"  => [safe_payload[:queries]]
+        )
+      end
+
+      this_second_metrics[status_group] = 1
+
+      @this_second_metrics = this_second_metrics.values
     end
 
     redis.setex(this_second, interval_seconds, Oj.dump(this_second_metrics))
@@ -70,18 +88,18 @@ class EZmetrics
 
   def partition_by(time_unit=:minute)
     time_unit = PARTITION_UNITS.include?(time_unit) ? time_unit : :minute
-    @partitioned_metrics = interval_metrics.group_by { |h| second_to_partition_unit(time_unit, h["second"]) }
+    @partitioned_metrics = interval_metrics.group_by { |array| second_to_partition_unit(time_unit, array[schema["second"]]) }
     self
   end
 
   private
 
-  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :flat,
+  attr_reader :redis, :interval_seconds, :interval_metrics, :requests, :flat, :schema,
     :storage_key, :safe_payload, :this_second_metrics, :partitioned_metrics, :options
 
   def aggregate_data
     return {} unless interval_metrics.any?
-    @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
+    @requests = interval_metrics.sum { |array| array[schema["all"]] }
     build_result
   rescue
     {}
@@ -90,11 +108,12 @@ class EZmetrics
   def aggregate_partitioned_data
     partitioned_metrics.map do |partition, metrics|
       @interval_metrics = metrics
-      @requests = interval_metrics.sum { |hash| hash["statuses"]["all"] }
+      @requests = interval_metrics.sum { |array| array[schema["all"]] }
+      METRICS.each { |metrics_type| instance_variable_set("@sorted_#{metrics_type}_values", nil) }
       flat ? { timestamp: partition, **build_result } : { timestamp: partition, data: build_result }
     end
   rescue
-    new(options)
+    self
   end
 
   def build_result
@@ -147,39 +166,101 @@ class EZmetrics
     @interval_metrics ||= begin
       interval_start    = Time.now.to_i - interval_seconds
       interval_keys     = (interval_start..Time.now.to_i).to_a
-      redis.mget(interval_keys).compact.map { |hash| Oj.load(hash) }
+      redis.mget(interval_keys).compact.map { |array| Oj.load(array) }
     end
   end
 
   def aggregate(metrics, aggregation_function)
-    return unless AGGREGATION_FUNCTIONS.include?(aggregation_function)
     return avg("#{metrics}_sum") if aggregation_function == :avg
     return max("#{metrics}_max") if aggregation_function == :max
+
+    percentile = aggregation_function.match(/percentile_(?<value>\d+)/)
+
+    if percentile && percentile["value"]
+      sorted_values = send("sorted_#{metrics}_values")
+      percentile(sorted_values, percentile["value"].to_i)&.round
+    end
+  end
+
+  METRICS.each do |metrics|
+    define_method "sorted_#{metrics}_values" do
+      instance_variable_get("@sorted_#{metrics}_values") || instance_variable_set(
+        "@sorted_#{metrics}_values", interval_metrics.map { |array| array[schema["#{metrics}_values"]] }.flatten.compact
+      )
+    end
+  end
+
+  def redis_schema
+    [
+      "second",
+      "duration_sum",
+      "duration_max",
+      "views_sum",
+      "views_max",
+      "db_sum",
+      "db_max",
+      "queries_sum",
+      "queries_max",
+      "2xx",
+      "3xx",
+      "4xx",
+      "5xx",
+      "all",
+      "duration_values",
+      "views_values",
+      "db_values",
+      "queries_values"
+    ].each_with_index.inject({}){ |result, pair| result[pair[0]] = pair[1] ; result }
   end
 
   def update_sum(metrics)
-    this_second_metrics["#{metrics}_sum"] += safe_payload[metrics]
+    this_second_metrics[schema["#{metrics}_sum"]] += safe_payload[metrics]
+  end
+
+  def store_value(metrics)
+    this_second_metrics[schema["#{metrics}_values"]] << safe_payload[metrics]
   end
 
   def update_max(metrics)
-    max_value = [safe_payload[metrics], this_second_metrics["#{metrics}_max"]].max
-    this_second_metrics["#{metrics}_max"] = max_value
+    max_value = [safe_payload[metrics], this_second_metrics[schema["#{metrics}_max"]]].max
+    this_second_metrics[schema["#{metrics}_max"]] = max_value
   end
 
   def avg(metrics)
-    (interval_metrics.sum { |h| h[metrics] }.to_f / requests).round
+    (interval_metrics.sum { |array| array[schema[metrics]] }.to_f / requests).round
   end
 
   def max(metrics)
-    interval_metrics.max { |h| h[metrics] }[metrics].round
+    interval_metrics.max { |array| array[schema[metrics]] }[schema[metrics]].round
+  end
+
+  def percentile(array, pcnt)
+    sorted_array = array.sort
+
+    return nil if array.length == 0
+
+    rank  = (pcnt.to_f / 100) * (array.length + 1)
+    whole = rank.truncate
+
+    # if has fractional part
+    if whole != rank
+      s0 = sorted_array[whole - 1]
+      s1 = sorted_array[whole]
+
+      f = (rank - rank.truncate).abs
+
+      return (f * (s1 - s0)) + s0
+    else
+      return sorted_array[whole - 1]
+    end
   end
 
   def count_all_status_groups
-    interval_metrics.inject({ "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0 }) do |result, h|
-      result["2xx"] += h["statuses"]["2xx"]
-      result["3xx"] += h["statuses"]["3xx"]
-      result["4xx"] += h["statuses"]["4xx"]
-      result["5xx"] += h["statuses"]["5xx"]
+    interval_metrics.inject({ "2xx" => 0, "3xx" => 0, "4xx" => 0, "5xx" => 0 }) do |result, array|
+      result["2xx"] += array[schema["2xx"]]
+      result["3xx"] += array[schema["3xx"]]
+      result["4xx"] += array[schema["4xx"]]
+      result["5xx"] += array[schema["5xx"]]
       result
     end
   end

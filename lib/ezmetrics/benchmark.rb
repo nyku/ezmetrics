@@ -2,12 +2,13 @@ require "benchmark"
 
 class EZmetrics::Benchmark
 
-  def initialize
-    @start      = Time.now.to_i
-    @redis      = Redis.new
-    @durations  = []
-    @iterations = 3
-    @intervals  = {
+  def initialize(store_each_value=false)
+    @store_each_value = store_each_value
+    @start            = Time.now.to_i
+    @redis            = Redis.new(driver: :hiredis)
+    @durations        = []
+    @iterations       = 1
+    @intervals        = {
       "1.minute" => 60,
       "1.hour  " => 3600,
       "12.hours" => 43200,
@@ -29,31 +30,38 @@ class EZmetrics::Benchmark
 
   private
 
-  attr_reader :start, :redis, :durations, :intervals, :iterations
+  attr_reader :start, :redis, :durations, :intervals, :iterations, :store_each_value
 
   def write_metrics
     seconds = intervals.values.max
     seconds.times do |i|
       second = start - i
       payload = {
-        "second"          => second,
-        "duration_sum"    => rand(10000),
-        "duration_max"    => rand(10000),
-        "views_sum"       => rand(1000),
-        "views_max"       => rand(1000),
-        "db_sum"          => rand(8000),
-        "db_max"          => rand(8000),
-        "queries_sum"     => rand(100),
-        "queries_max"     => rand(100),
-        "statuses"        => {
-          "2xx" => rand(1..10),
-          "3xx" => rand(1..10),
-          "4xx" => rand(1..10),
-          "5xx" => rand(1..10),
-          "all" => rand(1..40)
-        }
+        "second"       => second,
+        "duration_sum" => rand(10000),
+        "duration_max" => rand(10000),
+        "views_sum"    => rand(1000),
+        "views_max"    => rand(1000),
+        "db_sum"       => rand(8000),
+        "db_max"       => rand(8000),
+        "queries_sum"  => rand(100),
+        "queries_max"  => rand(100),
+        "2xx"          => rand(1..10),
+        "3xx"          => rand(1..10),
+        "4xx"          => rand(1..10),
+        "5xx"          => rand(1..10),
+        "all"          => rand(1..40)
       }
-      redis.setex(second, seconds, Oj.dump(payload))
+
+      if store_each_value
+        payload.merge!(
+          "duration_values" => Array.new(100) { rand(10..60000) },
+          "views_values"    => Array.new(100) { rand(10..60000) },
+          "db_values"       => Array.new(100) { rand(10..60000) },
+          "queries_values"  => Array.new(10)  { rand(1..60) }
+        )
+      end
+      redis.setex(second, seconds, Oj.dump(payload.values))
     end
     nil
   end
@@ -67,10 +75,11 @@ class EZmetrics::Benchmark
   def measure_aggregation_time(interval, seconds, partition_by)
     iterations.times do
       durations << ::Benchmark.measure do
-        if partition_by
-          EZmetrics.new(seconds).partition_by(partition_by).show
+        ezmetrics = EZmetrics.new(seconds)
+        if store_each_value
+          partition_by ? ezmetrics.partition_by(partition_by).show(db: :percentile_90) : ezmetrics.show(db: :percentile_90)
         else
-          EZmetrics.new(seconds).show
+          partition_by ? ezmetrics.partition_by(partition_by).show : ezmetrics.show
         end
       end.real
     end

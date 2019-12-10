@@ -10,6 +10,16 @@ Simple, lightweight and fast metrics aggregation for Rails.
 gem 'ezmetrics'
 ```
 
+## Available metrics
+
+|    Type    |          Aggregate functions      |
+|:----------:|:---------------------------------:|
+| `duration` |  `avg`, `max`, `percentile`       |
+|   `views`  |  `avg`, `max`, `percentile`       |
+|    `db`    |  `avg`, `max`, `percentile`       |
+|  `queries` |  `avg`, `max`, `percentile`       |
+| `requests` | `all`, `2xx`, `3xx`, `4xx`, `5xx` |
+
 ## Usage
 
 ### Getting started
@@ -258,6 +268,48 @@ EZmetrics.new.show(views: :avg, :db: [:avg, :max], requests: true)
 }
 ```
 
+---
+
+**5. Percentile**
+
+This feature is available since version `2.0.0`.
+
+By default percentile aggregation is turned off because it requires to store each value of all metrics.
+
+To enable this feature - you need to set `store_each_value: true` when saving the metrics:
+
+```ruby
+EZmetrics.new.log(
+  duration:         100.5,
+  views:            40.7,
+  db:               59.8,
+  queries:          4,
+  status:           200,
+  store_each_value: true
+)
+```
+
+The aggregation syntax has the following format `metrics_type: :percentile_{number}` where `number` is any integer in the 1..99 range.
+
+
+```ruby
+EZmetrics.new.show(db: [:avg, :percentile_90, :percentile_95], duration: :percentile_99)
+```
+
+```ruby
+{
+  db: {
+    avg: 155,
+    percentile_90: 205,
+    percentile_95: 215
+  },
+  duration: {
+    percentile_99: 236
+  }
+}
+```
+
+
 ### Partitioning
 
 If you want to visualize your metrics by using a **line chart**, you will need to use partitioning.
@@ -317,6 +369,8 @@ Available time units for partitioning: `second`, `minute`, `hour`, `day`. Defaul
 
 The aggregation speed relies on the performance of **Redis** (data storage) and **Oj** (json serialization/parsing).
 
+#### Simple aggregation
+
 You can check the **aggregation** time by running:
 
 ```ruby
@@ -326,10 +380,10 @@ EZmetrics::Benchmark.new.measure_aggregation
 | Interval | Duration (seconds) |
 | :------: | :----------------: |
 | 1 minute |        0.0         |
-|  1 hour  |        0.04        |
-| 12 hours |        0.49        |
-| 24 hours |        1.51        |
-| 48 hours |        3.48        |
+|  1 hour  |        0.02        |
+| 12 hours |        0.22        |
+| 24 hours |        0.61        |
+| 48 hours |        1.42        |
 
 ---
 
@@ -342,9 +396,44 @@ EZmetrics::Benchmark.new.measure_aggregation(:minute)
 | Interval | Duration (seconds) |
 | :------: | :----------------: |
 | 1 minute |        0.0         |
-|  1 hour  |        0.04        |
-| 12 hours |        0.53        |
-| 24 hours |        1.59        |
-| 48 hours |        3.51        |
+|  1 hour  |        0.02        |
+| 12 hours |        0.25        |
+| 24 hours |        0.78        |
+| 48 hours |        1.75        |
+
+---
+
+#### Percentile aggregation
+
+You can check the **percentile aggregation** time by running:
+
+```ruby
+EZmetrics::Benchmark.new(true).measure_aggregation
+```
+
+| Interval | Duration (seconds) |
+| :------: | :----------------: |
+| 1 minute |        0.0         |
+|  1 hour  |        0.14        |
+| 12 hours |        2.11        |
+| 24 hours |        5.85        |
+| 48 hours |        14.1        |
+
+---
+
+To check the **partitioned aggregation** time for percentile you need to run:
+
+```ruby
+EZmetrics::Benchmark.new(true).measure_aggregation(:minute)
+```
+
+| Interval | Duration (seconds) |
+| :------: | :----------------: |
+| 1 minute |        0.0         |
+|  1 hour  |        0.16        |
+| 12 hours |        1.97        |
+| 24 hours |        5.85        |
+| 48 hours |        13.9        |
+
 
 The benchmarks above were run on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_
