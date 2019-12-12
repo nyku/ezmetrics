@@ -12,12 +12,12 @@ gem 'ezmetrics'
 
 ## Available metrics
 
-|    Type    |          Aggregate functions      |
-|:----------:|:---------------------------------:|
-| `duration` |  `avg`, `max`, `percentile`       |
-|   `views`  |  `avg`, `max`, `percentile`       |
-|    `db`    |  `avg`, `max`, `percentile`       |
-|  `queries` |  `avg`, `max`, `percentile`       |
+|    Type    |        Aggregate functions        |
+| :--------: | :-------------------------------: |
+| `duration` |    `avg`, `max`, `percentile`     |
+|  `views`   |    `avg`, `max`, `percentile`     |
+|    `db`    |    `avg`, `max`, `percentile`     |
+| `queries`  |    `avg`, `max`, `percentile`     |
 | `requests` | `all`, `2xx`, `3xx`, `4xx`, `5xx` |
 
 ## Usage
@@ -291,7 +291,6 @@ EZmetrics.new.log(
 
 The aggregation syntax has the following format `metrics_type: :percentile_{number}` where `number` is any integer in the 1..99 range.
 
-
 ```ruby
 EZmetrics.new.show(db: [:avg, :percentile_90, :percentile_95], duration: :percentile_99)
 ```
@@ -309,6 +308,29 @@ EZmetrics.new.show(db: [:avg, :percentile_90, :percentile_95], duration: :percen
 }
 ```
 
+**6. Percentile distribution**
+
+If you want to visualize percentile distribution (from 1% to 99%):
+
+```ruby
+EZmetrics.new.show(duration: :percentile_distribution)
+```
+
+```ruby
+{
+  duration: {
+    percentile_distribution: {
+      1: 12,
+      2: 15,
+      3: 19,
+      #...
+      97: 6540,
+      98: 6682,
+      99: 6730
+    }
+  }
+}
+```
 
 ### Partitioning
 
@@ -369,71 +391,32 @@ Available time units for partitioning: `second`, `minute`, `hour`, `day`. Defaul
 
 The aggregation speed relies on the performance of **Redis** (data storage) and **Oj** (json serialization/parsing).
 
-#### Simple aggregation
-
-You can check the **aggregation** time by running:
+You can check the **aggregation** time (in seconds) by running:
 
 ```ruby
+# 1. Simple
 EZmetrics::Benchmark.new.measure_aggregation
-```
 
-| Interval | Duration (seconds) |
-| :------: | :----------------: |
-| 1 minute |        0.0         |
-|  1 hour  |        0.02        |
-| 12 hours |        0.22        |
-| 24 hours |        0.61        |
-| 48 hours |        1.42        |
-
----
-
-To check the **partitioned aggregation** time you need to run:
-
-```ruby
+# 2. Partitioned
 EZmetrics::Benchmark.new.measure_aggregation(:minute)
-```
 
-| Interval | Duration (seconds) |
-| :------: | :----------------: |
-| 1 minute |        0.0         |
-|  1 hour  |        0.02        |
-| 12 hours |        0.25        |
-| 24 hours |        0.78        |
-| 48 hours |        1.75        |
-
----
-
-#### Percentile aggregation
-
-You can check the **percentile aggregation** time by running:
-
-```ruby
+# 3. Percentile
 EZmetrics::Benchmark.new(true).measure_aggregation
-```
 
-| Interval | Duration (seconds) |
-| :------: | :----------------: |
-| 1 minute |        0.0         |
-|  1 hour  |        0.14        |
-| 12 hours |        2.11        |
-| 24 hours |        5.85        |
-| 48 hours |        14.1        |
-
----
-
-To check the **partitioned aggregation** time for percentile you need to run:
-
-```ruby
+# 4.  Percentile (partitioned)
 EZmetrics::Benchmark.new(true).measure_aggregation(:minute)
 ```
 
-| Interval | Duration (seconds) |
-| :------: | :----------------: |
-| 1 minute |        0.0         |
-|  1 hour  |        0.16        |
-| 12 hours |        1.97        |
-| 24 hours |        5.85        |
-| 48 hours |        13.9        |
-
+| Interval | Simple aggregation | Partitioned | Percentile | Percentile (partitioned) |
+| :------: | :----------------: | :---------: | :--------: | :----------------------: |
+| 1 minute |        0.0         |     0.0     |    0.0     |           0.0            |
+|  1 hour  |        0.02        |    0.02     |    0.14    |           0.16           |
+| 12 hours |        0.22        |    0.25     |    2.11    |           1.97           |
+| 24 hours |        0.61        |    0.78     |    5.85    |           5.85           |
+| 48 hours |        1.42        |    1.75     |    14.1    |           13.9           |
 
 The benchmarks above were run on a _2017 Macbook Pro 2.9 GHz Intel Core i7 with 16 GB of RAM_
+
+### License
+
+ezmetrics is released under the [MIT License](https://opensource.org/licenses/MIT).

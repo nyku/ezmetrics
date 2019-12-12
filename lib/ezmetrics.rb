@@ -174,6 +174,14 @@ class EZmetrics
     return avg("#{metrics}_sum") if aggregation_function == :avg
     return max("#{metrics}_max") if aggregation_function == :max
 
+    if aggregation_function == :percentile_distribution
+      sorted_values = send("sorted_#{metrics}_values")
+      return (1..99).to_a.inject({}) do |result, number|
+        result[number] = percentile(sorted_values, number)
+        result
+      end
+    end
+
     percentile = aggregation_function.match(/percentile_(?<value>\d+)/)
 
     if percentile && percentile["value"].to_i.between?(1, 99)

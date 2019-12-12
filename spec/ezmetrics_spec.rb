@@ -22,13 +22,7 @@ describe EZmetrics do
     end
 
     it "should handle percentiles" do
-      redis.flushdb
-
-      values = Array.new(101) { |i| (i.to_f*1.9+1).round(2) }.shuffle
-
-      values.each do |value|
-        subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
-      end
+      log_metrics_store_each_value!
 
       expect(
         subject.show(
@@ -39,6 +33,29 @@ describe EZmetrics do
         {
           duration: { percentile_90: 174 },
           views:    { percentile_95: 183, percentile_99: 191 }
+        }
+      )
+    end
+
+    it "should handle percentiles distribution" do
+      log_metrics_store_each_value!
+
+      expect(
+        subject.show(duration: :percentile_distribution)
+      ).to eq(
+        {
+          duration: {
+            percentile_distribution: {
+              1=>1, 2=>3, 3=>5, 4=>7, 5=>9, 6=>11, 7=>13, 8=>15, 9=>17, 10=>18, 11=>20, 12=>22, 13=>24, 14=>26, 15=>28,
+              16=>30, 17=>32, 18=>34, 19=>36, 20=>38, 21=>40, 22=>42, 23=>44, 24=>46, 25=>48, 26=>49, 27=>51, 28=>53,
+              29=>55, 30=>57, 31=>59, 32=>61, 33=>63, 34=>65, 35=>67, 36=>69, 37=>71, 38=>73, 39=>75, 40=>77, 41=>79,
+              42=>80, 43=>82, 44=>84, 45=>86, 46=>88, 47=>90, 48=>92, 49=>94, 50=>96, 51=>98, 52=>100, 53=>102, 54=>104,
+              55=>106, 56=>108, 57=>110, 58=>112, 59=>113, 60=>115, 61=>117, 62=>119, 63=>121, 64=>123, 65=>125, 66=>127,
+              67=>129, 68=>131, 69=>133, 70=>135, 71=>137, 72=>139, 73=>141, 74=>143, 75=>144, 76=>146, 77=>148, 78=>150,
+              79=>152, 80=>154, 81=>156, 82=>158, 83=>160, 84=>162, 85=>164, 86=>166, 87=>168, 88=>170, 89=>172, 90=>174,
+              91=>175, 92=>177, 93=>179, 94=>181, 95=>183, 96=>185, 97=>187, 98=>189, 99=>191
+            }
+          }
         }
       )
     end
@@ -234,6 +251,16 @@ describe EZmetrics do
         ]
       )
     end
+  end
+end
+
+def log_metrics_store_each_value!
+  redis.flushdb
+
+  values = Array.new(101) { |i| (i.to_f*1.9+1).round(2) }.shuffle
+
+  values.each do |value|
+    subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
   end
 end
 
