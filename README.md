@@ -403,7 +403,7 @@ EZmetrics::Benchmark.new.measure_aggregation(:minute)
 # 3. Percentile
 EZmetrics::Benchmark.new(true).measure_aggregation
 
-# 4.  Percentile (partitioned)
+# 4. Percentile (partitioned)
 EZmetrics::Benchmark.new(true).measure_aggregation(:minute)
 ```
 
