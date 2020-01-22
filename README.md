@@ -98,6 +98,7 @@ ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*
     status:   event.payload[:status].to_i || 500,
     queries:  Thread.current[:queries].to_i,
   )
+  Thread.current[:queries] = 0
 end
 ```
 
