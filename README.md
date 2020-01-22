@@ -83,7 +83,7 @@ Just add an initializer to your application:
 
 ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
   event = ActiveSupport::Notifications::Event.new(*args)
-  unless event.payload[:name] == "SCHEMA"
+  unless event.payload[:name] == "SCHEMA" || event.payload[:sql] =~ /\ABEGIN|COMMIT|ROLLBACK\z/
     Thread.current[:queries] ||= 0
     Thread.current[:queries] += 1
   end
