@@ -1,6 +1,6 @@
 require "spec_helper"
 
-describe EZmetrics do
+describe Ezmetrics::Storage do
   let(:redis) { Redis.new }
 
   before do
@@ -128,7 +128,7 @@ describe EZmetrics do
     it "should expire stored keys" do
       redis.flushdb
       described_class.new(1).log(duration: 100.5, views: 71.4, db: 24.4, queries: 1, status: 200)
-      expect(EZmetrics.new.show).to eq(
+      expect(Ezmetrics::Storage.new.show).to eq(
         {
           duration: { avg: 101, max: 101 },
           views:    { avg: 71, max: 71 },
@@ -140,18 +140,18 @@ describe EZmetrics do
 
       sleep(1)
 
-      expect(EZmetrics.new.show).to eq({})
+      expect(Ezmetrics::Storage.new.show).to eq({})
     end
 
     it "should handle log/show errors" do
       expect(Redis).to receive(:new).and_return(nil).exactly(2).times
-      log_result = EZmetrics.new.log(views: 3.1, db: 12.5, duration: 10.4, status: 200)
+      log_result = Ezmetrics::Storage.new.log(views: 3.1, db: 12.5, duration: 10.4, status: 200)
 
       expect(log_result[:error]).to     eq("NoMethodError")
       expect(log_result[:message]).to   include("undefined method `get'")
       expect(log_result[:backtrace]).to be
 
-      expect(EZmetrics.new.show).to eq({})
+      expect(Ezmetrics::Storage.new.show).to eq({})
     end
   end
 
@@ -163,7 +163,7 @@ describe EZmetrics do
     it "should return all metrics, partitioned by :second" do
       log_metrics!(1)
 
-      expect(EZmetrics.new.partition_by(:second).show).to eq(
+      expect(Ezmetrics::Storage.new.partition_by(:second).show).to eq(
         [
           {
             timestamp: Time.now.to_i - 1,
@@ -192,7 +192,7 @@ describe EZmetrics do
     it "should return all metrics, partitioned by :minute" do
       log_metrics!(1)
 
-      expect(EZmetrics.new.partition_by(:minute).show).to eq(
+      expect(Ezmetrics::Storage.new.partition_by(:minute).show).to eq(
         [
           {
             timestamp: Time.new(*Time.now.to_a[0..5].reverse[0..4]).to_i,
@@ -211,7 +211,7 @@ describe EZmetrics do
     it "should return all metrics, partitioned by :hour" do
       log_metrics!(1)
 
-      expect(EZmetrics.new.partition_by(:hour).show).to eq(
+      expect(Ezmetrics::Storage.new.partition_by(:hour).show).to eq(
         [
           {
             timestamp: Time.new(*Time.now.to_a[0..5].reverse[0..3]).to_i,
@@ -230,7 +230,7 @@ describe EZmetrics do
     it "should display flat view" do
       log_metrics!(1)
 
-      expect(EZmetrics.new.flatten.partition_by(:hour).show).to eq(
+      expect(Ezmetrics::Storage.new.flatten.partition_by(:hour).show).to eq(
         [
           {
             timestamp: Time.new(*Time.now.to_a[0..5].reverse[0..3]).to_i,
@@ -261,6 +261,7 @@ def log_metrics_store_each_value!
 
   values.each do |value|
     subject.log(duration: value, views: value, db: value, queries: 2, status: 200, store_each_value: true)
+    sleep 0.02
   end
 end
 

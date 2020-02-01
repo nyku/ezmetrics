@@ -1,0 +1,20 @@
+#!/bin/bash
+
+cd lib/ezmetrics/dashboard/react-dashboard
+
+rm -r build
+
+yarn build:clean
+
+cd build
+
+rm -f main.js main.css
+
+cp static/js/*.js main.js
+cp static/css/*.css main.css
+
+sed '$d' main.css > main.css.upd && mv main.css.upd main.css
+sed '$d' main.js > main.js.upd && sed '1d' main.js.upd > main.js
+
+cp main.js  ../../app/assets/javascripts/dashboard/main.js
+cp main.css ../../app/assets/stylesheets/dashboard/main.css

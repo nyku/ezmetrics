@@ -1,0 +1,79 @@
+.metric {
+  padding: 6px;
+  border-bottom: 1px solid rgb(207, 207, 207);
+}
+
+.metrics-block {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f5f4f4;
+}
+
+.request-metric {
+  padding: 6px;
+}
+
+.rouded {
+  border-radius: 0.6rem;
+}
+.requests-block {
+  margin-top: 10px;
+}
+
+.row div + div {
+  margin-left: 10px;
+}
+.topbar {
+  background-color: #f5f4f4;
+  padding: 40px 20px 20px 20px;
+  margin-top: 10px;
+  overflow-y: hidden;
+  max-height: 460px;
+  opacity: 1;
+  width: 100%;
+  transition-property: all;
+  transition-duration: .5s;
+  transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+}
+.small {
+  font-size: 60%;
+}
+
+.App {
+  margin: 10px;
+}
+
+.fullscreen {
+  float: right;
+  left: 0px;
+}
+
+.nivo {
+  height: 350px;
+  min-width: 1200px;
+}
+
+.topbar.closed {
+  max-height: 0 !important;
+  padding: 0px !important;
+  margin-top: -10px !important;
+  opacity: 0 !important;
+}
+
+.metrics-url {
+  margin-top: -15px;
+}
+
+.metrics-url label {
+  color: rgba(0, 0, 0, 0.54);
+  padding: 0;
+  font-size: 0.75rem;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.00938em;
+}
+
+.display-4 {
+  color: #454545 !important;
+}

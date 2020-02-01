@@ -1,6 +1,6 @@
 require "benchmark"
 
-class EZmetrics::Benchmark
+class Ezmetrics::Benchmark
 
   def initialize(store_each_value=false)
     @store_each_value = store_each_value
@@ -75,7 +75,7 @@ class EZmetrics::Benchmark
   def measure_aggregation_time(interval, seconds, partition_by)
     iterations.times do
       durations << ::Benchmark.measure do
-        ezmetrics = EZmetrics.new(seconds)
+        ezmetrics = Ezmetrics::Storage.new(seconds)
         if store_each_value
           partition_by ? ezmetrics.partition_by(partition_by).show(db: :percentile_90) : ezmetrics.show(db: :percentile_90)
         else
