@@ -77,3 +77,6 @@
 .display-4 {
   color: #454545 !important;
 }
+.hidden {
+  display: none;
+}

@@ -19,6 +19,7 @@ export interface AppState {
   graphMetricsList: any[];
   overviewMetricsList: any[];
   timeoutFunction: any;
+  error: String;
 }
 
 export function metricValueToLabel(value: String): String | undefined {
@@ -43,6 +44,7 @@ export default class App extends Component<AppProps, AppState> {
   constructor(props: AppProps) {
     super(props);
     this.state = {
+      error:               "",
       showNav:             false,
       metrics:             { simple: {}, partitioned: {} },
       timeoutFunction:     setTimeout(() => this.fetchByTimeout(), allRefreshIntervals[0].value),
@@ -104,6 +106,7 @@ export default class App extends Component<AppProps, AppState> {
     return (
       <div className="App">
         <div className={this.state.fullscreen ? "container-fluid" : "container"}>
+          <div className={this.state.error.length ? "alert alert-danger error-message" : "hidden"}>{this.state.error}</div>
           <nav className="navbar navbar-light bg-light rounded">
             <span className="navbar-brand">Ezmetrics | Dashboard</span>
             <div className="col"><button className="btn btn-outline-secondary fullscreen" onClick={this.toggleFullscreen}>↹</button></div>
@@ -146,11 +149,8 @@ export default class App extends Component<AppProps, AppState> {
 
     fetch(`${this.state.metricsUrl}?interval=${this.state.timeframe}&partition=${this.state.partition}&overview_metrics=${overviewMetrics}&graph_metrics=${graphMetrics}`)
     .then(res => res.json())
-    .then(
-      (data) => {
-        this.setState({metrics: data});
-      }
-    )
+    .then((data) => this.setState({metrics: data, error: ""}))
+    .catch(error => this.setState({error: "Fetching error: " + error.message + "."}))
   }
 
   changeFrequency(frequencyValue: number) {

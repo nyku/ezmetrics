@@ -1,11 +1,19 @@
 # Changelog
 
 
+## [3.0.1] - 2020-02-01
+
+### Added
+
+- Dashboard: Fetching error handling.
+
+---
+
 ## [3.0.0] - 2020-02-01
 
 ### Added
 
-- Dashboard (mountable rails engine)
+- Dashboard (React flavoured mountable rails engine)
 
 ### Changed
 
