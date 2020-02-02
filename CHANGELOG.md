@@ -1,6 +1,16 @@
 # Changelog
 
 
+## [3.0.2] - 2020-02-02
+
+### Added
+
+- Config generator
+- Better 500 status detection
+- Dashboard: layout fix
+
+---
+
 ## [3.0.1] - 2020-02-01
 
 ### Added
