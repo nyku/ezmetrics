@@ -1,5 +1,7 @@
 module Dashboard
 	class MetricsController < ApplicationController
+		layout "dashboard/application"
+
 		def index
 		end
 
